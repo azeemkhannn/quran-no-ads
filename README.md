@@ -2,6 +2,18 @@
 
 An offline, ad-free 13-line IndoPak mushaf (Taj Company layout, 847 pages) for Android and iOS, built with Expo / React Native.
 
+Free for everyone, with no ads and no tracking. **This app is not for sale.**
+
+## Screenshots
+
+| Home | Reading (13 lines) | About & sources |
+|---|---|---|
+| <img src="docs/screenshots/home.jpg" width="240" alt="Home screen"> | <img src="docs/screenshots/reader.jpg" width="240" alt="13-line IndoPak page"> | <img src="docs/screenshots/about.jpg" width="240" alt="About and sources page"> |
+
+## Licences
+
+The app's code libraries are MIT. The Quran font, text and page layout belong to their authors (QuranWBW, the Quranic Universal Library by Tarteel, and Taj Company), and permission requests are in progress. See [docs/LICENSES.md](docs/LICENSES.md).
+
 ## Status
 - All **847 pages** render from the font plus layout data (no page images).
 - Lines are justified like the print. Surah-ending lines are centered, and each surah has a header and a Bismillah line.
