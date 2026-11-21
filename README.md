@@ -4,6 +4,21 @@ An offline, ad-free 13-line IndoPak mushaf (Taj Company layout, 847 pages) for A
 
 Free for everyone, with no ads and no tracking. **This app is not for sale.**
 
+## Goal: light enough for almost every phone
+
+Many people read the Quran on old, cheap or slow phones. Quran No Ads is built to run well on them:
+
+- **Small download.** Pages are drawn from one font and a compact text file (about 600 KB compressed), not from 847 page images that would weigh hundreds of MB.
+- **Works fully offline.** No internet permission is needed for reading, and there are no ads, no tracking and no accounts.
+- **Old phones supported:** Android 7.0 or later (32-bit and 64-bit phones), and iOS 16.4 or later.
+- **Light on memory.** Only the pages around the one you are reading are kept in memory (five on iPhone), and the line measuring work is done once per phone and then saved.
+- **Few dependencies.** Only core Expo modules are used, and new heavy libraries are not accepted (see [CONTRIBUTING.md](CONTRIBUTING.md)).
+
+## Download
+
+- **Android:** download the APK from the [latest release](https://github.com/azeemkhannn/quran-no-ads/releases/latest) and open it on your phone. You may need to allow "Install unknown apps" for your browser or file manager.
+- **iPhone:** not published yet. Apple requires a paid developer account to sign iPhone apps; until then you can run it with Expo Go (see [Run](#run)).
+
 ## Screenshots
 
 | Home | Reading (13 lines) | About & sources |
@@ -24,7 +39,7 @@ Contributions are welcome! The most valuable help is **reporting mistakes in the
 - All **847 pages** render from the font plus layout data (no page images).
 - Lines are justified like the print. Surah-ending lines are centered, and each surah has a header and a Bismillah line.
 - One font size per device: the widest line fills the screen (on tablets the height limits it).
-- Right-to-left page swipe (page 1 on the right), Next/Prev buttons and a Go-to-page box.
+- Right-to-left page swipe (page 1 on the right), Next/Prev buttons and a Go-to-page box. Android and web use a FlatList of all pages; iPhone uses a small five-page pager (`src/reader/PagePager.tsx`), because the long list could open on a blank page there.
 - Light, Sepia and Night themes.
 - **Resume:** reopens on the last page read. The theme and bookmarks are saved on the device (SQLite key-value store on phones, `localStorage` on web), with no account and no network.
 - **Home landing page** (the app opens here) has:
@@ -68,15 +83,20 @@ The data is bundled as compact JSON rather than SQLite because it is read-only a
 ## Files
 - `src/reader/layout.ts`: font-size and line-height maths (the numbers to tune)
 - `src/reader/MushafPage.tsx`: draws one page
-- `src/reader/LineMeasurer.tsx`: measures the 60 longest lines once at startup
+- `src/reader/LineMeasurer.tsx`: measures the 500 longest candidate lines once per phone and saves the result
 - `src/data/pages.ts`: reads `quran.json` and builds each page on demand
 
 ## Next
-- Test on real Android and iOS phones, especially small screens.
-- Resume at the last-read page, the Surah and Para lists, and bookmarks (MVP features).
-- Cache the measured font size per screen width, so measuring runs only on first launch.
+- Test on more real Android and iOS phones, especially small screens and low-end Android.
+- Publish on Google Play and the App Store.
 - Have a hafiz proofread every page against the printed Taj 13-line mushaf. One known item: QUL encodes the ayah-1 marker of Al-Fatiha's Bismillah with a different glyph (U+F61E) that shows as an empty circle.
-- Ask QUL/Tarteel and QuranWBW for permission and add their credits to the About screen.
+- Wait for the permission replies from QUL/Tarteel, QuranWBW and Taj Company (see [docs/LICENSES.md](docs/LICENSES.md)).
+
+## Building a release
+
+- **App icons:** `python -I scripts/make_icons.py` builds every icon from `assets/images/icon-source.webp`.
+- **Android APK:** `npx expo prebuild -p android --clean`, then `cd android && ./gradlew assembleRelease`. The release keeps only the ARM CPU types and strips unused code (set in `app.json` with `expo-build-properties`). Sign the APK with your own release key before sharing it.
+- **iOS:** needs a Mac with Xcode, or EAS Build, plus an Apple Developer account.
 
 ## Credits
 - The font is "Indopak Nastaleeq" (Hanafi v4.2.2 with waqf lazim) from the Quranic Universal Library (Tarteel). Its embedded credits name Al Qalam, Ghandhara, KFGQPC and Ayman Siddiqui.

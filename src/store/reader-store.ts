@@ -144,6 +144,13 @@ function subscribe(l: () => void) {
   return () => listeners.delete(l);
 }
 
-export function useReaderStore<T>(select: (s: State) => T): T {
-  return useSyncExternalStore(subscribe, () => select(state), () => select(state));
+const noSubscribe = () => () => {};
+
+/**
+ * Reads from the store and re-renders when the selected value changes.
+ * Pass live = false to stop listening (e.g. Home while it is hidden behind the reader, so page turns
+ * don't redraw it); it catches up as soon as live is true again.
+ */
+export function useReaderStore<T>(select: (s: State) => T, live = true): T {
+  return useSyncExternalStore(live ? subscribe : noSubscribe, () => select(state), () => select(state));
 }

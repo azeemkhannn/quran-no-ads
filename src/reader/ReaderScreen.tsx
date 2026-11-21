@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -11,9 +11,13 @@ import { computeLayout } from './layout';
 import { GoToPageDialog } from './GoToPageDialog';
 import { BackgroundMeasurer, getMeasuredWidths } from './LineMeasurer';
 import { MushafPage } from './MushafPage';
+import { PagePager, type PagerHandle } from './PagePager';
 
 const TOOLBAR_H = 60;
 const STATUS_H = 34;
+// iOS turns pages with a small five-page pager: a FlatList of all pages opened on a far page could show
+// a blank page there (see PagePager). Android and web keep the FlatList, which works well there.
+const USE_PAGER = Platform.OS === 'ios';
 
 /** Back to the home page (or straight to it when the reader was opened from a link). */
 function goHome() {
@@ -43,6 +47,12 @@ export function ReaderScreen() {
   const [area, setArea] = useState<{ w: number; h: number } | null>(null);
   const listRef = useRef<FlatList<number>>(null);
   const insets = useSafeAreaInsets();
+  const pagerRef = useRef<PagerHandle>(null);
+  // Latest page index, for callbacks (refs can't be read during render).
+  const indexRef = useRef(index);
+  useEffect(() => {
+    indexRef.current = index;
+  }, [index]);
 
   const layout = useMemo(
     () => (lineWidths && area ? computeLayout(area.w, area.h, lineWidths) : null),
@@ -54,23 +64,33 @@ export function ReaderScreen() {
   const page = index + 1;
   const isBookmarked = bookmarked.has(page);
 
+  /** Shows page i and saves it (as the Continue reading place, or as a Recently read entry). */
+  const changeIndex = useCallback((i: number) => {
+    setIndex(i);
+    if (tracks.current) readerStore.setLastPage(i + 1);
+    else readerStore.recordRecent(i + 1);
+  }, []);
+
   // Created once: FlatList does not allow this callback to change.
   const [onViewableItemsChanged] = useState(() => ({ viewableItems }: { viewableItems: { index?: number | null }[] }) => {
     const first = viewableItems[0];
-    if (first?.index != null) {
-      setIndex(first.index);
-      if (tracks.current) readerStore.setLastPage(first.index + 1);
-      else readerStore.recordRecent(first.index + 1);
-    }
+    if (first?.index != null) changeIndex(first.index);
   });
 
-  const goTo = useCallback((i: number, animated = true) => {
-    const next = Math.max(0, Math.min(TOTAL_PAGES - 1, i));
-    listRef.current?.scrollToIndex({ index: next, animated });
-    setIndex(next);
-    if (tracks.current) readerStore.setLastPage(next + 1);
-    else readerStore.recordRecent(next + 1);
-  }, []);
+  const goTo = useCallback(
+    (i: number, animated = true) => {
+      const next = Math.max(0, Math.min(TOTAL_PAGES - 1, i));
+      if (USE_PAGER) {
+        const d = next - indexRef.current;
+        if (animated && (d === 1 || d === -1)) pagerRef.current?.turn(d);
+        else changeIndex(next);
+        return;
+      }
+      listRef.current?.scrollToIndex({ index: next, animated });
+      changeIndex(next);
+    },
+    [changeIndex],
+  );
 
   const cycleTheme = () =>
     readerStore.setTheme(THEME_ORDER[(THEME_ORDER.indexOf(themeName) + 1) % THEME_ORDER.length]);
@@ -89,7 +109,18 @@ export function ReaderScreen() {
           setArea((a) => (a && a.w === w && a.h === h ? a : { w, h }));
         }}
       >
-        {layout ? (
+        {layout && USE_PAGER ? (
+          <PagePager
+            ref={pagerRef}
+            index={index}
+            count={TOTAL_PAGES}
+            pageWidth={layout.pageWidth}
+            onIndexChange={changeIndex}
+            renderPage={(i) => (
+              <MushafPage page={getPage(i + 1)} layout={layout} theme={theme} bookmarked={bookmarked.has(i + 1)} />
+            )}
+          />
+        ) : layout ? (
           <FlatList
             ref={listRef}
             data={PAGE_NUMBERS}

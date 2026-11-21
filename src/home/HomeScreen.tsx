@@ -1,17 +1,18 @@
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { router } from 'expo-router';
+import { router, useIsFocused } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { JUZ, SURAHS, TOTAL_PAGES, getPage, surahAtPage, type SurahInfo } from '@/data/pages';
 import { PARA_NAMES } from '@/data/meta';
 import { readerStore, useReaderStore, type Bookmark, type ReadingMode, type Recent } from '@/store/reader-store';
 import { BackgroundMeasurer } from '@/reader/LineMeasurer';
-import { THEMES, THEME_ORDER, type Theme } from '@/theme';
+import { THEMES, THEME_ORDER, type Theme, type ThemeName } from '@/theme';
 
 type Tab = 'surahs' | 'paras' | 'bookmarks';
-const ROW_H = 68;
+type IconName = React.ComponentProps<typeof Ionicons>['name'];
+const ROW_H = 72;
 
 /**
  * Opens the reader at a page. With no mode given, the app decides (see readerStore.modeFor): your
@@ -24,32 +25,133 @@ function openReader(page: number, mode?: ReadingMode, surah?: number) {
 
 type OnOpen = (page: number, surah?: number) => void;
 
-/** Home landing page: continue reading, then Surahs / Paras / Bookmarks. */
+type Item =
+  | { kind: 'controls' }
+  | { kind: 'surah'; surah: SurahInfo }
+  | { kind: 'para'; para: (typeof JUZ)[number] }
+  | { kind: 'bookmark'; bookmark: Bookmark }
+  | { kind: 'empty'; icon: IconName; title: string; text: string };
+
+const CONTROLS: Item = { kind: 'controls' };
+
+const normalize = (s: string) =>
+  s.toLowerCase().normalize('NFD').replace(/[̀-ًͯ-ٰٟ'`\-\s]/g, '');
+
+/**
+ * Home landing page. The whole screen is one list: the title, About banner and Continue reading
+ * card scroll away, and the Surahs / Paras / Bookmarks tabs (with search) stay pinned at the top,
+ * so on small phones the list gets the full screen.
+ */
 export function HomeScreen() {
-  const themeName = useReaderStore((s) => s.theme);
+  // Home stays mounted under the reader. While hidden it stops listening to the store, so every
+  // page turn doesn't redraw it in the background; it catches up when you come back.
+  const live = useIsFocused();
+  const themeName = useReaderStore((s) => s.theme, live);
   const theme = THEMES[themeName];
-  const lastPage = useReaderStore((s) => s.lastPage);
-  const bookmarks = useReaderStore((s) => s.bookmarks);
+  const lastPage = useReaderStore((s) => s.lastPage, live);
+  const bookmarks = useReaderStore((s) => s.bookmarks, live);
+  const recents = useReaderStore((s) => s.recents, live);
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<Tab>('surahs');
   const [query, setQuery] = useState('');
 
-  const current = getPage(lastPage);
-  const recents = useReaderStore((s) => s.recents);
-  const surah = surahAtPage(lastPage);
-  const started = lastPage > 1;
-  const progress = lastPage / TOTAL_PAGES;
+  const currentPara = getPage(lastPage).juz;
+  const currentSurah = surahAtPage(lastPage).number;
   const onOpen: OnOpen = (page, surahNo) => openReader(page, undefined, surahNo);
 
-  const cycleTheme = () => readerStore.setTheme(THEME_ORDER[(THEME_ORDER.indexOf(themeName) + 1) % THEME_ORDER.length]);
+  const items = useMemo<Item[]>(() => {
+    if (tab === 'surahs') {
+      const q = normalize(query.trim());
+      const list = q
+        ? SURAHS.filter((x) => String(x.number) === q || normalize(x.name).includes(q) || normalize(x.nameAr).includes(q))
+        : SURAHS;
+      if (!list.length) {
+        return [CONTROLS, { kind: 'empty', icon: 'search', title: 'No surah found', text: 'Try a name like Yasin or a number from 1 to 114.' }];
+      }
+      return [CONTROLS, ...list.map((x) => ({ kind: 'surah' as const, surah: x }))];
+    }
+    if (tab === 'paras') return [CONTROLS, ...JUZ.map((j) => ({ kind: 'para' as const, para: j }))];
+    if (!bookmarks.length) {
+      return [
+        CONTROLS,
+        {
+          kind: 'empty',
+          icon: 'bookmark-outline',
+          title: 'No bookmarks yet',
+          text: 'While reading, tap the bookmark button at the bottom left to save a page here.',
+        },
+      ];
+    }
+    return [CONTROLS, ...bookmarks.map((b) => ({ kind: 'bookmark' as const, bookmark: b }))];
+  }, [tab, query, bookmarks]);
+
+  const renderItem = ({ item }: { item: Item }) => {
+    switch (item.kind) {
+      case 'controls':
+        return <Controls theme={theme} tab={tab} setTab={setTab} query={query} setQuery={setQuery} bookmarkCount={bookmarks.length} />;
+      case 'surah':
+        return <SurahRow surah={item.surah} theme={theme} current={item.surah.number === currentSurah} onOpen={onOpen} />;
+      case 'para':
+        return <ParaRow para={item.para} theme={theme} current={item.para.number === currentPara} onOpen={onOpen} />;
+      case 'bookmark':
+        return <BookmarkRow bookmark={item.bookmark} theme={theme} onOpen={onOpen} />;
+      case 'empty':
+        return <Empty theme={theme} icon={item.icon} title={item.title} text={item.text} />;
+    }
+  };
 
   return (
-    <View style={[styles.root, { backgroundColor: theme.bg, paddingTop: insets.top + 10 }]}>
+    <View style={[styles.root, { backgroundColor: theme.bg, paddingTop: insets.top }]}>
       <StatusBar style={theme.statusBar} />
       {/* Prepares the reader's font size while you browse, so pages open instantly. */}
       <BackgroundMeasurer />
+      <FlatList
+        data={items}
+        keyExtractor={itemKey}
+        renderItem={renderItem}
+        extraData={theme}
+        ListHeaderComponent={<HomeHeader theme={theme} themeName={themeName} lastPage={lastPage} recents={recents} />}
+        // Index 0 is the header above; index 1 is the tabs + search bar, pinned while the list scrolls.
+        stickyHeaderIndices={[1]}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}
+        initialNumToRender={14}
+        windowSize={9}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+      />
+    </View>
+  );
+}
 
-      {/* Header */}
+function itemKey(item: Item): string {
+  switch (item.kind) {
+    case 'surah':
+      return `s${item.surah.number}`;
+    case 'para':
+      return `p${item.para.number}`;
+    case 'bookmark':
+      return `b${item.bookmark.page}`;
+    default:
+      return item.kind;
+  }
+}
+
+// ---------- Header (scrolls away) ----------
+
+function HomeHeader({
+  theme, themeName, lastPage, recents,
+}: {
+  theme: Theme; themeName: ThemeName; lastPage: number; recents: Recent[];
+}) {
+  const current = getPage(lastPage);
+  const surah = surahAtPage(lastPage);
+  const started = lastPage > 1;
+  const progress = lastPage / TOTAL_PAGES;
+  const cycleTheme = () => readerStore.setTheme(THEME_ORDER[(THEME_ORDER.indexOf(themeName) + 1) % THEME_ORDER.length]);
+
+  return (
+    <View style={styles.headerBlock}>
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
           <Text style={[styles.appArabic, { color: theme.frame }]}>القرآن الكريم</Text>
@@ -115,39 +217,6 @@ export function HomeScreen() {
       </Pressable>
 
       {recents.length > 0 && <RecentRow theme={theme} recents={recents} />}
-
-      {/* Segmented control */}
-      <View style={[styles.segment, { backgroundColor: theme.frameSoft }]} accessibilityRole="tablist">
-        {(
-          [
-            ['surahs', 'Surahs', 'list'],
-            ['paras', 'Paras', 'albums-outline'],
-            ['bookmarks', `Bookmarks${bookmarks.length ? ` · ${bookmarks.length}` : ''}`, 'bookmark-outline'],
-          ] as const
-        ).map(([key, label, icon]) => {
-          const selected = tab === key;
-          return (
-            <Pressable
-              key={key}
-              onPress={() => setTab(key)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected }}
-              style={[styles.segmentItem, selected && [styles.segmentSelected, { backgroundColor: theme.paper }]]}
-            >
-              <Ionicons name={icon} size={15} color={selected ? theme.frame : theme.muted} />
-              <Text style={[styles.segmentText, { color: selected ? theme.frame : theme.muted }]} numberOfLines={1}>
-                {label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {tab === 'surahs' && (
-        <SurahList theme={theme} query={query} setQuery={setQuery} currentSurah={surah.number} bottom={insets.bottom} onOpen={onOpen} />
-      )}
-      {tab === 'paras' && <ParaList theme={theme} currentPara={current.juz} bottom={insets.bottom} onOpen={onOpen} />}
-      {tab === 'bookmarks' && <BookmarkList theme={theme} bookmarks={bookmarks} bottom={insets.bottom} onOpen={onOpen} />}
     </View>
   );
 }
@@ -190,57 +259,71 @@ function RecentRow({ theme, recents }: { theme: Theme; recents: Recent[] }) {
   );
 }
 
-// ---------- Surahs ----------
+// ---------- Tabs + search (pinned) ----------
 
-const normalize = (s: string) =>
-  s.toLowerCase().normalize('NFD').replace(/[̀-ًͯ-ٰٟ'`\-\s]/g, '');
-
-function SurahList({
-  theme, query, setQuery, currentSurah, bottom, onOpen,
+function Controls({
+  theme, tab, setTab, query, setQuery, bookmarkCount,
 }: {
-  theme: Theme; query: string; setQuery: (q: string) => void; currentSurah: number; bottom: number; onOpen: OnOpen;
+  theme: Theme; tab: Tab; setTab: (t: Tab) => void; query: string; setQuery: (q: string) => void; bookmarkCount: number;
 }) {
-  const results = useMemo(() => {
-    const q = normalize(query.trim());
-    if (!q) return SURAHS;
-    return SURAHS.filter(
-      (s) => String(s.number) === q || normalize(s.name).includes(q) || normalize(s.nameAr).includes(q),
-    );
-  }, [query]);
-
+  const tabs: readonly (readonly [Tab, string, IconName])[] = [
+    ['surahs', 'Surahs', 'list'],
+    ['paras', 'Paras', 'albums-outline'],
+    ['bookmarks', 'Bookmarks', 'bookmark-outline'],
+  ];
   return (
-    <>
-      <View style={[styles.search, { backgroundColor: theme.paper, borderColor: theme.frameSoft }]}>
-        <Ionicons name="search" size={18} color={theme.muted} />
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Search surah name or number"
-          placeholderTextColor={theme.muted}
-          style={[styles.searchInput, { color: theme.ink }]}
-          autoCorrect={false}
-          returnKeyType="search"
-          accessibilityLabel="Search surahs"
-        />
-        {!!query && (
-          <Pressable onPress={() => setQuery('')} hitSlop={8} accessibilityLabel="Clear search">
-            <Ionicons name="close-circle" size={18} color={theme.muted} />
-          </Pressable>
-        )}
+    <View style={[styles.controls, { backgroundColor: theme.bg, borderBottomColor: theme.frameSoft }]}>
+      <View style={[styles.segment, { backgroundColor: theme.frameSoft }]} accessibilityRole="tablist">
+        {tabs.map(([key, label, icon]) => {
+          const selected = tab === key;
+          const count = key === 'bookmarks' ? bookmarkCount : 0;
+          return (
+            <Pressable
+              key={key}
+              onPress={() => setTab(key)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected }}
+              accessibilityLabel={count ? `${label}, ${count}` : label}
+              style={[styles.segmentItem, selected && [styles.segmentSelected, { backgroundColor: theme.paper }]]}
+            >
+              <Ionicons name={icon} size={15} color={selected ? theme.frame : theme.muted} />
+              <Text style={[styles.segmentText, { color: selected ? theme.frame : theme.muted }]} numberOfLines={1}>
+                {label}
+              </Text>
+              {count > 0 && (
+                <View style={[styles.countPill, { backgroundColor: selected ? theme.frame : theme.muted }]}>
+                  <Text style={[styles.countText, { color: theme.paper }]}>{count}</Text>
+                </View>
+              )}
+            </Pressable>
+          );
+        })}
       </View>
-      <FlatList
-        data={results}
-        keyExtractor={(s) => String(s.number)}
-        renderItem={({ item }) => <SurahRow surah={item} theme={theme} current={item.number === currentSurah} onOpen={onOpen} />}
-        getItemLayout={(_, i) => ({ length: ROW_H, offset: ROW_H * i, index: i })}
-        initialScrollIndex={query ? 0 : Math.max(0, Math.min(currentSurah - 3, SURAHS.length - 8))}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingBottom: bottom + 16 }}
-        ListEmptyComponent={<Empty theme={theme} icon="search" title="No surah found" text="Try a name like Yasin or a number from 1 to 114." />}
-      />
-    </>
+      {tab === 'surahs' && (
+        <View style={[styles.search, { backgroundColor: theme.paper, borderColor: theme.frameSoft }]}>
+          <Ionicons name="search" size={18} color={theme.muted} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search surah name or number"
+            placeholderTextColor={theme.muted}
+            style={[styles.searchInput, { color: theme.ink }]}
+            autoCorrect={false}
+            returnKeyType="search"
+            accessibilityLabel="Search surahs"
+          />
+          {!!query && (
+            <Pressable onPress={() => setQuery('')} hitSlop={8} accessibilityLabel="Clear search">
+              <Ionicons name="close-circle" size={18} color={theme.muted} />
+            </Pressable>
+          )}
+        </View>
+      )}
+    </View>
   );
 }
+
+// ---------- Rows ----------
 
 function SurahRow({ surah, theme, current, onOpen }: { surah: SurahInfo; theme: Theme; current: boolean; onOpen: OnOpen }) {
   return (
@@ -249,44 +332,36 @@ function SurahRow({ surah, theme, current, onOpen }: { surah: SurahInfo; theme: 
       <View style={styles.rowText}>
         <Text style={[styles.rowTitle, { color: theme.ink }]} numberOfLines={1}>{surah.name}</Text>
         <Text style={[styles.rowSub, { color: theme.muted }]} numberOfLines={1}>
-          {surah.place === 'makkah' ? 'Makki' : 'Madani'} · {surah.ayahs} ayahs · page. {surah.startPage}
+          {surah.place === 'makkah' ? 'Makki' : 'Madani'} · {surah.ayahs} ayahs
         </Text>
       </View>
-      <Text style={[styles.rowArabic, { color: theme.ink }]}>{surah.nameAr}</Text>
+      <View style={styles.rowEnd}>
+        <Text style={[styles.rowArabic, { color: current ? theme.frame : theme.ink }]} numberOfLines={1}>{surah.nameAr}</Text>
+        <Text style={[styles.rowPage, { color: theme.muted }]}>Page {surah.startPage}</Text>
+      </View>
     </Row>
   );
 }
 
-// ---------- Paras ----------
-
-function ParaList({ theme, currentPara, bottom, onOpen }: { theme: Theme; currentPara: number; bottom: number; onOpen: OnOpen }) {
+function ParaRow({ para, theme, current, onOpen }: { para: (typeof JUZ)[number]; theme: Theme; current: boolean; onOpen: OnOpen }) {
   return (
-    <FlatList
-      data={JUZ}
-      keyExtractor={(j) => String(j.number)}
-      getItemLayout={(_, i) => ({ length: ROW_H, offset: ROW_H * i, index: i })}
-      initialScrollIndex={Math.max(0, Math.min(currentPara - 3, JUZ.length - 8))}
-      contentContainerStyle={{ paddingBottom: bottom + 16 }}
-      renderItem={({ item }) => {
-        const current = item.number === currentPara;
-        return (
-          <Row theme={theme} current={current} onPress={() => onOpen(item.startPage)} label={`Para ${item.number}, page ${item.startPage}`}>
-            <NumberBadge n={item.number} theme={theme} current={current} />
-            <View style={styles.rowText}>
-              <Text style={[styles.rowTitle, { color: theme.ink }]}>Para {item.number}</Text>
-              <Text style={[styles.rowSub, { color: theme.muted }]} numberOfLines={1}>
-                {SURAHS[item.surah - 1].name} {item.surah}:{item.ayah} · page. {item.startPage}
-              </Text>
-            </View>
-            <Text style={[styles.rowArabic, { color: theme.ink }]}>{PARA_NAMES[item.number - 1]}</Text>
-          </Row>
-        );
-      }}
-    />
+    <Row theme={theme} current={current} onPress={() => onOpen(para.startPage)} label={`Para ${para.number}, page ${para.startPage}`}>
+      <NumberBadge n={para.number} theme={theme} current={current} />
+      <View style={styles.rowText}>
+        <Text style={[styles.rowTitle, { color: theme.ink }]}>Para {para.number}</Text>
+        <Text style={[styles.rowSub, { color: theme.muted }]} numberOfLines={1}>
+          {SURAHS[para.surah - 1].name} {para.surah}:{para.ayah}
+        </Text>
+      </View>
+      <View style={styles.rowEnd}>
+        <Text style={[styles.rowArabic, { color: current ? theme.frame : theme.ink }]} numberOfLines={1}>
+          {PARA_NAMES[para.number - 1]}
+        </Text>
+        <Text style={[styles.rowPage, { color: theme.muted }]}>Page {para.startPage}</Text>
+      </View>
+    </Row>
   );
 }
-
-// ---------- Bookmarks ----------
 
 function timeAgo(ms: number): string {
   const s = Math.max(0, (Date.now() - ms) / 1000);
@@ -297,60 +372,37 @@ function timeAgo(ms: number): string {
   return d === 1 ? 'yesterday' : `${d} days ago`;
 }
 
-function BookmarkList({
-  theme, bookmarks, bottom, onOpen,
-}: {
-  theme: Theme; bookmarks: Bookmark[]; bottom: number; onOpen: OnOpen;
-}) {
-  if (bookmarks.length === 0) {
-    return (
-      <Empty
-        theme={theme}
-        icon="bookmark-outline"
-        title="No bookmarks yet"
-        text="While reading, tap the bookmark button at the bottom left to save a page here."
-      />
-    );
-  }
+function BookmarkRow({ bookmark, theme, onOpen }: { bookmark: Bookmark; theme: Theme; onOpen: OnOpen }) {
+  const p = getPage(bookmark.page);
+  const surah = SURAHS[p.surah - 1];
   return (
-    <FlatList
-      data={bookmarks}
-      keyExtractor={(b) => String(b.page)}
-      contentContainerStyle={{ paddingBottom: bottom + 16 }}
-      renderItem={({ item }) => {
-        const p = getPage(item.page);
-        const surah = SURAHS[p.surah - 1];
-        return (
-          <Row
-            theme={theme}
-            current={false}
-            onPress={() => onOpen(item.page)}
-            label={`Bookmark, page ${item.page}, ${surah.name}`}
-            trailing={
-              <Pressable
-                onPress={() => readerStore.removeBookmark(item.page)}
-                hitSlop={10}
-                accessibilityRole="button"
-                accessibilityLabel={`Remove bookmark for page ${item.page}`}
-                style={({ pressed }) => [styles.trash, { opacity: pressed ? 0.6 : 1 }]}
-              >
-                <Ionicons name="trash-outline" size={20} color={theme.muted} />
-              </Pressable>
-            }
-          >
-            <View style={[styles.bookmarkIcon, { backgroundColor: theme.frameSoft }]}>
-              <Ionicons name="bookmark" size={18} color={theme.frame} />
-            </View>
-            <View style={styles.rowText}>
-              <Text style={[styles.rowTitle, { color: theme.ink }]}>Page {item.page}</Text>
-              <Text style={[styles.rowSub, { color: theme.muted }]} numberOfLines={1}>
-                {surah.name} · Para {p.juz} · {timeAgo(item.createdAt)}
-              </Text>
-            </View>
-          </Row>
-        );
-      }}
-    />
+    <Row
+      theme={theme}
+      current={false}
+      onPress={() => onOpen(bookmark.page)}
+      label={`Bookmark, page ${bookmark.page}, ${surah.name}`}
+      trailing={
+        <Pressable
+          onPress={() => readerStore.removeBookmark(bookmark.page)}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel={`Remove bookmark for page ${bookmark.page}`}
+          style={({ pressed }) => [styles.trash, { opacity: pressed ? 0.6 : 1 }]}
+        >
+          <Ionicons name="trash-outline" size={20} color={theme.muted} />
+        </Pressable>
+      }
+    >
+      <View style={[styles.bookmarkIcon, { backgroundColor: theme.frameSoft }]}>
+        <Ionicons name="bookmark" size={18} color={theme.frame} />
+      </View>
+      <View style={styles.rowText}>
+        <Text style={[styles.rowTitle, { color: theme.ink }]}>Page {bookmark.page}</Text>
+        <Text style={[styles.rowSub, { color: theme.muted }]} numberOfLines={1}>
+          {surah.name} · Para {p.juz} · {timeAgo(bookmark.createdAt)}
+        </Text>
+      </View>
+    </Row>
   );
 }
 
@@ -364,7 +416,7 @@ function Row({
   trailing?: React.ReactNode;
 }) {
   return (
-    <View style={[styles.rowWrap, { borderBottomColor: theme.frameSoft }, current && { backgroundColor: theme.frameSoft }]}>
+    <View style={[styles.rowWrap, current && { backgroundColor: theme.frameSoft }]}>
       <Pressable
         onPress={onPress}
         accessibilityRole="button"
@@ -374,6 +426,7 @@ function Row({
         {children}
       </Pressable>
       {trailing}
+      {!current && <View style={[styles.divider, { backgroundColor: theme.frameSoft }]} />}
     </View>
   );
 }
@@ -388,7 +441,7 @@ function NumberBadge({ n, theme, current }: { n: number; theme: Theme; current: 
   );
 }
 
-function Empty({ theme, icon, title, text }: { theme: Theme; icon: React.ComponentProps<typeof Ionicons>['name']; title: string; text: string }) {
+function Empty({ theme, icon, title, text }: { theme: Theme; icon: IconName; title: string; text: string }) {
   return (
     <View style={styles.empty}>
       <View style={[styles.emptyIcon, { backgroundColor: theme.frameSoft }]}>
@@ -402,6 +455,7 @@ function Empty({ theme, icon, title, text }: { theme: Theme; icon: React.Compone
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  headerBlock: { paddingTop: 10, paddingBottom: 6 },
   header: { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: 20, marginBottom: 12, gap: 12 },
   appArabic: { fontSize: 15, fontWeight: '700', textAlign: 'left', writingDirection: 'ltr' },
   title: { fontSize: 30, fontWeight: '800', letterSpacing: -0.5, marginTop: 2 },
@@ -440,23 +494,32 @@ const styles = StyleSheet.create({
   recentName: { fontSize: 13, fontWeight: '700', maxWidth: 110 },
   recentPage: { fontSize: 11, marginTop: 1 },
 
-  segment: { flexDirection: 'row', marginHorizontal: 16, marginTop: 16, marginBottom: 10, borderRadius: 14, padding: 4 },
-  segmentItem: { flex: 1, height: 38, borderRadius: 11, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  controls: { paddingTop: 10, paddingBottom: 10, gap: 10, borderBottomWidth: StyleSheet.hairlineWidth },
+  segment: { flexDirection: 'row', marginHorizontal: 16, borderRadius: 14, padding: 4 },
+  segmentItem: {
+    flex: 1, height: 40, borderRadius: 11, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    paddingHorizontal: 4,
+  },
   segmentSelected: { shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
-  segmentText: { fontSize: 13, fontWeight: '700' },
+  segmentText: { fontSize: 14, fontWeight: '700', flexShrink: 1 },
+  countPill: { minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center' },
+  countText: { fontSize: 11, fontWeight: '800' },
 
   search: {
-    flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 16, marginBottom: 6, paddingHorizontal: 14,
-    height: 44, borderRadius: 14, borderWidth: 1,
+    flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 16, paddingHorizontal: 14,
+    height: 46, borderRadius: 14, borderWidth: 1,
   },
   searchInput: { flex: 1, fontSize: 15, paddingVertical: 0 },
 
-  rowWrap: { height: ROW_H, flexDirection: 'row', alignItems: 'center', paddingRight: 12, borderBottomWidth: StyleSheet.hairlineWidth },
-  row: { flex: 1, height: ROW_H, flexDirection: 'row', alignItems: 'center', paddingLeft: 18, paddingRight: 6, gap: 14 },
-  rowText: { flex: 1 },
+  rowWrap: { height: ROW_H, flexDirection: 'row', alignItems: 'center', marginHorizontal: 8, paddingRight: 8, borderRadius: 16 },
+  row: { flex: 1, height: ROW_H, flexDirection: 'row', alignItems: 'center', paddingLeft: 10, paddingRight: 6, gap: 14 },
+  divider: { position: 'absolute', left: 62, right: 10, bottom: 0, height: StyleSheet.hairlineWidth },
+  rowText: { flex: 1, minWidth: 0 },
   rowTitle: { fontSize: 16, fontWeight: '700' },
-  rowSub: { fontSize: 13, marginTop: 2 },
-  rowArabic: { fontSize: 20, fontWeight: '600' },
+  rowSub: { fontSize: 13, marginTop: 3 },
+  rowEnd: { alignItems: 'flex-end', maxWidth: '45%' },
+  rowArabic: { fontSize: 21, fontWeight: '600' },
+  rowPage: { fontSize: 12, marginTop: 1 },
 
   badgeWrap: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
   badgeDiamond: { position: 'absolute', width: 28, height: 28, borderWidth: 1.5, borderRadius: 6, transform: [{ rotate: '45deg' }] },
@@ -465,7 +528,7 @@ const styles = StyleSheet.create({
   bookmarkIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   trash: { padding: 6 },
 
-  empty: { alignItems: 'center', paddingHorizontal: 40, paddingTop: 60, gap: 10 },
+  empty: { alignItems: 'center', paddingHorizontal: 40, paddingTop: 48, paddingBottom: 240, gap: 10 },
   emptyIcon: { width: 68, height: 68, borderRadius: 34, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
   emptyTitle: { fontSize: 18, fontWeight: '700' },
   emptyText: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
