@@ -11,7 +11,7 @@ Checked on 21 November 2026. This is a practical summary, not legal advice.
 | **Page layout** (Taj Company 13-line, 847 pages) | QUL "mushaf layout 313". It follows the mushaf printed by Taj Company, Lahore. | QUL: *"We don't have copyright information for this resource."* | **YES: ask QUL/Tarteel** about the data. **Recommended: courtesy request to Taj Company**, since the line and page arrangement follows their print. |
 | **Surah names and juz metadata** | QUL Quran metadata | No licence stated. These are basic facts (surah names, juz boundaries). | Low risk. Mention them in the QUL request. |
 | **Para names** (الٓمّٓ, سَيَقُوْلُ …) | Traditional names, typed in the app | Public domain (traditional) | No |
-| **Ayah-number glyphs** (inside the font) | KFGQPC (King Fahd Complex) Nastaleeq font | The KFGQPC end-user licence reserves all rights | **Ask QuranWBW** whether their permission covers this. If not, KFGQPC must be asked (template below). |
+| **Ayah-number glyphs** (inside the font) | KFGQPC (King Fahd Complex) Nastaleeq font | The KFGQPC end-user licence reserves all rights | **Ask QuranWBW** whether their permission covers this. If not, KFGQPC must be asked. |
 | **App code libraries** (Expo, React, React Native, expo-router, expo-sqlite, Ionicons via @expo/vector-icons, …) | npm | **MIT** (all 16 runtime packages checked) | No. Keep their licence notices: the app's About page and store listing can say "Open-source licences: MIT". |
 | **QUL software** | github.com/TarteelAI/quranic-universal-library | MIT (software only; this does not cover the data or fonts) | No. We don't use their code. |
 
@@ -31,10 +31,10 @@ Checked on 21 November 2026. This is a practical summary, not legal advice.
 
 ## Before publishing to Google Play / App Store
 
-1. Get written permission from **QuranWBW** for the font and text, including the font modification (email 1).
-2. Ask **QUL / Tarteel** about the layout data and metadata, and the attribution they want (message 2, sent as a GitHub issue because QUL gives no email).
-3. Send a courtesy permission request to **Taj Company** for using their 13-line page layout (email 3).
-4. Only if QuranWBW says it's needed, contact **KFGQPC** about the ayah-number glyphs (email 4).
+1. Get written permission from **QuranWBW** for the font and text, including the font modification.
+2. Ask **QUL / Tarteel** about the layout data and metadata, and the attribution they want (sent as a GitHub issue, because QUL gives no email).
+3. Send a courtesy permission request to **Taj Company** for using their 13-line page layout.
+4. Only if QuranWBW says it's needed, contact **KFGQPC** about the ayah-number glyphs.
 5. Keep every reply, and keep the credits on the About page exactly as each author asks.
 
 If QuranWBW refuses or doesn't answer, the fallback is to switch to a font whose licence allows redistribution. That would need the Android rendering checks redone.

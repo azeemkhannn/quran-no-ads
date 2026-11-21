@@ -42,3 +42,6 @@ yarn-error.*
 
 # Claude Code local settings (not part of the app)
 .claude/
+
+# Private drafts (kept locally, not published)
+docs/permission-emails.md
