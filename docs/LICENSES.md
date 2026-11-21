@@ -20,6 +20,15 @@ Checked on 21 November 2026. This is a practical summary, not legal advice.
 - **Font:** `scripts/patch_font.py` adds one character-map entry, U+202F mapped to the font's own `space` glyph. No glyph is added, removed or edited. This is needed so waqf signs and ayah circles render correctly on Android. **The font licence forbids modification without written notice, so this must be disclosed to QuranWBW and approved.**
 - **Text:** no word is changed. On Android and web, the spaces *inside* a word unit are written as U+202F at display time only. The bundled data file keeps the original text.
 
+## Permission requests sent (21 November 2026)
+
+| To | How | Status |
+|---|---|---|
+| QuranWBW (font and IndoPak text) | Email to quranwbw@gmail.com | Waiting for reply |
+| QUL / Tarteel (layout, script, metadata) | GitHub issue [TarteelAI/quranic-universal-library#1085](https://github.com/TarteelAI/quranic-universal-library/issues/1085), using their "Licence or permission" form | Waiting for reply |
+| Taj Company (13-line layout) | Email to orders@tajquran.com, the only email on tajquran.com | Waiting for reply |
+| KFGQPC (ayah-number glyphs) | Not sent: depends on QuranWBW's answer | — |
+
 ## Before publishing to Google Play / App Store
 
 1. Get written permission from **QuranWBW** for the font and text, including the font modification (email 1).
