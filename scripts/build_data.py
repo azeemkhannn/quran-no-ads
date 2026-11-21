@@ -84,7 +84,7 @@ def main():
         die(f"expected 114 surah headers, got {len(surah_start_page)}")
     basm = sum(1 for l in lines if l[2] == 2)
     if basm != 112:
-        die(f"expected 112 bismillah lines (all surahs except 1 and 9), got {basm}")
+        die(f"expected 112 separate bismillah lines (Al-Fatihah's is ayah 1; At-Tawbah has none), got {basm}")
 
     # ---- page of every ayah's first word, for juz start pages ----
     word_page = [0] * (len(words) + 1)

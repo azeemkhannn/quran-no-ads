@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 import Constants from 'expo-constants';
@@ -8,6 +8,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { verifyQuranData } from '@/data/pages';
 import { useReaderStore } from '@/store/reader-store';
 import { THEMES, type Theme } from '@/theme';
+
+const DEVELOPER = { name: 'Azeem Ullah Khan', email: 'azeemkhannnn7@gmail.com' } as const;
+
+/** Opens the phone's mail app with a mistake report addressed to the developer. */
+function reportMistake() {
+  const subject = encodeURIComponent('Quran No Ads – mistake report');
+  const body = encodeURIComponent('Page:\nLine:\nWhat is different from the printed mushaf:\n');
+  Linking.openURL(`mailto:${DEVELOPER.email}?subject=${subject}&body=${body}`).catch(() => {
+    Alert.alert('No email app found', `Please write to ${DEVELOPER.email} with the page and line number.`);
+  });
+}
 
 /** About & verification: what this mushaf is, where every part comes from, and a live data check. */
 export function AboutScreen() {
@@ -36,6 +47,43 @@ export function AboutScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 24, gap: 14 }}>
+        {/* Developer */}
+        <View style={[styles.devCard, { backgroundColor: theme.paper, borderColor: theme.frameSoft }]}>
+          <View style={styles.devHead}>
+            <Image
+              source={require('../../assets/images/developer.jpg')}
+              style={[styles.devPhoto, { borderColor: theme.frame }]}
+              accessibilityLabel={`Photo of ${DEVELOPER.name}`}
+            />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.devKicker, { color: theme.frame }]}>DEVELOPER</Text>
+              <Text style={[styles.devName, { color: theme.ink }]}>{DEVELOPER.name}</Text>
+              <Text style={[styles.devEmail, { color: theme.muted }]} selectable>
+                {DEVELOPER.email}
+              </Text>
+            </View>
+          </View>
+          <View style={[styles.notForSale, { borderColor: theme.frame }]}>
+            <Ionicons name="pricetag-outline" size={16} color={theme.frame} />
+            <Text style={[styles.notForSaleText, { color: theme.frame }]}>THIS APP IS NOT FOR SALE</Text>
+          </View>
+          <View style={[styles.duaBox, { backgroundColor: theme.frameSoft }]}>
+            <Ionicons name="heart" size={18} color={theme.frame} />
+            <Text style={[styles.duaText, { color: theme.ink }]}>
+              It is free for everyone, forever, with no ads. In return, please make dua for my mother and father.
+            </Text>
+          </View>
+          <Pressable
+            onPress={reportMistake}
+            accessibilityRole="button"
+            accessibilityLabel={`Report a mistake by email to ${DEVELOPER.email}`}
+            style={({ pressed }) => [styles.reportBtn, { backgroundColor: theme.frame, opacity: pressed ? 0.8 : 1 }]}
+          >
+            <Ionicons name="mail-outline" size={18} color={theme.paper} />
+            <Text style={[styles.reportText, { color: theme.paper }]}>Report a mistake</Text>
+          </Pressable>
+        </View>
+
         {/* Live verification */}
         <View style={[styles.verifyCard, { backgroundColor: allOk ? theme.frame : '#B3261E' }]}>
           <View style={styles.verifyHead}>
@@ -81,7 +129,7 @@ export function AboutScreen() {
           <Source
             theme={theme}
             title="Font"
-            text="“Indopak Nastaleeq” (Hanafi, v4.2.2, with waqf lazim), QUL. Credits in the font: Al Qalam, Ghandhara, KFGQPC, Ayman Siddiqui."
+            text="“AlQuran IndoPak by QuranWBW”, made by Ayman Siddiqui for QuranWBW.com, based on the Al Qalam Quran Majeed fonts; ayah numbers from the KFGQPC Nastaleeq font. Obtained from QUL (Hanafi, with waqf lazim). Credits in the font: Al Qalam, Ghandhara, KFGQPC, Ayman Siddiqui, Abdul Majeed Khan, Arif Karim, Shakir-ul-Qadree, Jawad."
           />
           <Source
             theme={theme}
@@ -99,9 +147,18 @@ export function AboutScreen() {
         <Section theme={theme} icon="flag-outline" title="Found a mistake?">
           <Text style={[styles.body, { color: theme.ink }]}>
             The text has been checked against the data above, and every page should match the printed Taj 13-line mushaf. If
-            you notice anything that differs from your printed copy, please note the page and line number and report it, so it
-            can be corrected for everyone.
+            you notice anything that differs from your printed copy, please note the page and line number and email{' '}
+            {DEVELOPER.email}, so it can be corrected for everyone.
           </Text>
+          <Pressable
+            onPress={reportMistake}
+            accessibilityRole="button"
+            accessibilityLabel={`Report a mistake by email to ${DEVELOPER.email}`}
+            style={({ pressed }) => [styles.reportBtnOutline, { borderColor: theme.frame, opacity: pressed ? 0.7 : 1 }]}
+          >
+            <Ionicons name="mail-outline" size={17} color={theme.frame} />
+            <Text style={[styles.reportText, { color: theme.frame }]}>Email a correction</Text>
+          </Pressable>
         </Section>
 
         <Text style={[styles.footer, { color: theme.muted }]}>Quran No Ads · version {version}</Text>
@@ -164,6 +221,25 @@ const styles = StyleSheet.create({
   checkRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   checkLabel: { color: '#fff', fontSize: 13.5, fontWeight: '800', width: 72 },
   checkDetail: { color: '#fff', fontSize: 13.5, flex: 1, opacity: 0.95 },
+
+  devCard: { borderRadius: 22, borderWidth: 1, padding: 16, gap: 14 },
+  devHead: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  devPhoto: { width: 72, height: 72, borderRadius: 36, borderWidth: 2 },
+  devKicker: { fontSize: 11, fontWeight: '800', letterSpacing: 1.2 },
+  devName: { fontSize: 19, fontWeight: '800', marginTop: 2 },
+  devEmail: { fontSize: 13.5, marginTop: 2 },
+  notForSale: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5,
+    borderStyle: 'dashed', borderRadius: 12, paddingVertical: 8,
+  },
+  notForSaleText: { fontSize: 13, fontWeight: '800', letterSpacing: 1 },
+  duaBox: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', borderRadius: 14, padding: 12 },
+  duaText: { flex: 1, fontSize: 14, lineHeight: 21, fontWeight: '600' },
+  reportBtn: { height: 46, borderRadius: 23, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  reportBtnOutline: {
+    height: 42, borderRadius: 21, borderWidth: 1.5, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+  },
+  reportText: { fontSize: 15, fontWeight: '700' },
 
   section: { borderRadius: 20, borderWidth: 1, padding: 16, gap: 10 },
   sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 2 },

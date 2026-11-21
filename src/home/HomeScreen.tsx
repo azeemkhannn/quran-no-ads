@@ -56,27 +56,35 @@ export function HomeScreen() {
           <Text style={[styles.title, { color: theme.ink }]}>Quran No Ads</Text>
           <Text style={[styles.tagline, { color: theme.muted }]}>IndoPak 13-line mushaf · offline · free</Text>
         </View>
-        <View style={styles.headerBtns}>
-          <Pressable
-            onPress={() => router.push('/about')}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="About, sources and verification"
-            style={({ pressed }) => [styles.headerBtn, { backgroundColor: theme.frameSoft, opacity: pressed ? 0.7 : 1 }]}
-          >
-            <Ionicons name="shield-checkmark-outline" size={20} color={theme.frame} />
-          </Pressable>
-          <Pressable
-            onPress={cycleTheme}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel={`Theme: ${theme.label}. Tap to change`}
-            style={({ pressed }) => [styles.headerBtn, { backgroundColor: theme.frameSoft, opacity: pressed ? 0.7 : 1 }]}
-          >
-            <Ionicons name={theme.icon} size={20} color={theme.frame} />
-          </Pressable>
-        </View>
+        <Pressable
+          onPress={cycleTheme}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={`Theme: ${theme.label}. Tap to change`}
+          style={({ pressed }) => [styles.headerBtn, { backgroundColor: theme.frameSoft, opacity: pressed ? 0.7 : 1 }]}
+        >
+          <Ionicons name={theme.icon} size={20} color={theme.frame} />
+        </Pressable>
       </View>
+
+      {/* About & sources: highlighted so people see the text is verified and where it comes from */}
+      <Pressable
+        onPress={() => router.push('/about')}
+        accessibilityRole="button"
+        accessibilityLabel="Quran text verified. Open About and sources"
+        style={({ pressed }) => [
+          styles.aboutBanner,
+          { backgroundColor: theme.frameSoft, borderColor: theme.frame, opacity: pressed ? 0.75 : 1 },
+        ]}
+      >
+        <View style={[styles.aboutIcon, { backgroundColor: theme.frame }]}>
+          <Ionicons name="shield-checkmark" size={16} color={theme.paper} />
+        </View>
+        <Text style={[styles.aboutText, { color: theme.ink }]} numberOfLines={1}>
+          Quran text verified · <Text style={{ color: theme.frame, fontWeight: '800' }}>About & sources</Text>
+        </Text>
+        <Ionicons name="chevron-forward" size={18} color={theme.frame} />
+      </Pressable>
 
       {/* Continue reading */}
       <Pressable
@@ -394,11 +402,16 @@ function Empty({ theme, icon, title, text }: { theme: Theme; icon: React.Compone
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: 20, marginBottom: 16, gap: 12 },
+  header: { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: 20, marginBottom: 12, gap: 12 },
   appArabic: { fontSize: 15, fontWeight: '700', textAlign: 'left', writingDirection: 'ltr' },
   title: { fontSize: 30, fontWeight: '800', letterSpacing: -0.5, marginTop: 2 },
   tagline: { fontSize: 13, marginTop: 2 },
-  headerBtns: { flexDirection: 'row', gap: 8 },
+  aboutBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 16, marginBottom: 14,
+    paddingLeft: 6, paddingRight: 12, height: 44, borderRadius: 22, borderWidth: 1.5,
+  },
+  aboutIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  aboutText: { flex: 1, fontSize: 14, fontWeight: '600' },
   headerBtn: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
 
   hero: {

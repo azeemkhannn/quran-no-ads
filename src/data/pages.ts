@@ -238,10 +238,14 @@ export function verifyQuranData(): Check[] {
   let expected = 1;
   let wordsOk = true;
   let headers = 0;
-  let bismillahs = 0;
-  for (const [, , type, , , first, last] of data.lines) {
-    if (type === 1) headers++;
-    if (type === 2) bismillahs++;
+  let lastHeader = 0;
+  const bismillahAfter = new Set<number>(); // surahs whose header is followed by a Bismillah line
+  for (const [, , type, , surah, first, last] of data.lines) {
+    if (type === 1) {
+      headers++;
+      lastHeader = surah;
+    }
+    if (type === 2) bismillahAfter.add(lastHeader);
     if (type !== 0) continue;
     if (first !== expected || last < first) wordsOk = false;
     expected = last + 1;
@@ -265,7 +269,11 @@ export function verifyQuranData(): Check[] {
   add('Ayahs', ayahs === 6236, `${ayahs.toLocaleString('en')} ayahs`);
   const countsOk = SURAHS.length === 114 && SURAHS.every((s) => maxAyah[s.number] === s.ayahs);
   add('Surahs', countsOk && headers === 114, `114 surahs, each with its full ayah count`);
-  add('Bismillah', bismillahs === 112, `${bismillahs} Bismillah lines (all surahs except Al-Fatihah and At-Tawbah)`);
+  // Every surah begins with Bismillah except At-Tawbah (9). In Al-Fatihah it is ayah 1 itself, so it is
+  // part of the text rather than a separate line; all other surahs get their own Bismillah line.
+  const fatihaOpensWithIt = BISMILLAH_WORDS.length === 4 && wordAt(1).s === 1 && wordAt(1).a === 1;
+  const othersOk = SURAHS.every((sr) => sr.number === 1 || (sr.number === 9 ? !bismillahAfter.has(9) : bismillahAfter.has(sr.number)));
+  add('Bismillah', fatihaOpensWithIt && othersOk, '113 surahs begin with Bismillah (in Al-Fatihah it is ayah 1); only At-Tawbah has none');
 
   // Paras: 30, in page order.
   const parasOk = JUZ.length === 30 && JUZ.every((j, i) => i === 0 || j.startPage >= JUZ[i - 1].startPage);

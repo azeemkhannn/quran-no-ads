@@ -43,7 +43,7 @@ The script needs these files in the folder:
 It **fails** unless all of these hold:
 - every word 1..83,668 appears exactly once, in order;
 - 847 pages with at most 13 lines each;
-- 6,236 ayahs, 114 surah headers, 112 Bismillah lines and 30 juz.
+- 6,236 ayahs, 114 surah headers, 112 separate Bismillah lines and 30 juz. Every surah except At-Tawbah begins with Bismillah; in Al-Fatihah it is ayah 1, so it isn't a separate line.
 
 The data is bundled as compact JSON rather than SQLite because it is read-only and small. That avoids a native database dependency and works the same on Android, iOS and web.
 
