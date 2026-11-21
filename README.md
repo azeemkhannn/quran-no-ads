@@ -95,7 +95,7 @@ The data is bundled as compact JSON rather than SQLite because it is read-only a
 ## Building a release
 
 - **App icons:** `python -I scripts/make_icons.py` builds every icon from `assets/images/icon-source.webp`.
-- **Android APK:** `npx expo prebuild -p android --clean`, then `cd android && ./gradlew assembleRelease`. The release keeps only the ARM CPU types and strips unused code (set in `app.json` with `expo-build-properties`). Sign the APK with your own release key before sharing it.
+- **Android APK:** `npx expo prebuild -p android --clean`, then `cd android && ./gradlew assembleRelease`. The release keeps only the ARM CPU types, strips unused code and compresses the native libraries, which keeps the APK at about 26 MB (set in `app.json` with `expo-build-properties`). Sign the APK with your own release key before sharing it. On Windows, turn on long paths (`LongPathsEnabled`) and use CMake 3.31 or newer (`cmake.dir` in `android/local.properties`), because some C++ build folders are longer than 260 characters.
 - **iOS:** needs a Mac with Xcode, or EAS Build, plus an Apple Developer account.
 
 ## Credits
