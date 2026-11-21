@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "How to contribute"
+    url: https://github.com/azeemkhannn/quran-no-ads/blob/master/CONTRIBUTING.md
+    about: "Setup, rules and good first contributions."
+  - name: "Sources and licences"
+    url: https://github.com/azeemkhannn/quran-no-ads/blob/master/NOTICE.md
+    about: "Where the Quran text, layout and font come from."

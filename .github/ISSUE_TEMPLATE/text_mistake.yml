@@ -1,0 +1,61 @@
+name: "Quran text or layout mistake"
+description: "Something on a page differs from the printed Taj Company 13-line mushaf."
+title: "[Text] Page "
+labels: ["quran-text"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        JazakAllahu khairan for checking the text carefully. Every report is reviewed against verified sources before anything is changed.
+  - type: input
+    id: page
+    attributes:
+      label: "Page number"
+      description: "As shown at the top of the page in the app (1 to 847)."
+      placeholder: "e.g. 293"
+    validations:
+      required: true
+  - type: input
+    id: line
+    attributes:
+      label: "Line number"
+      description: "Count from the top of the page (1 to 13)."
+      placeholder: "e.g. 6"
+    validations:
+      required: true
+  - type: input
+    id: surah_ayah
+    attributes:
+      label: "Surah and ayah (if you know them)"
+      placeholder: "e.g. Yunus 10:27"
+  - type: dropdown
+    id: kind
+    attributes:
+      label: "What kind of mistake?"
+      options:
+        - "Wrong or missing word or letter"
+        - "Wrong or missing diacritic (harakat)"
+        - "Waqf sign missing, wrong or misplaced"
+        - "Ayah number or circle wrong or missing"
+        - "Word on the wrong line or page"
+        - "Display problem (cut off, overlapping, unreadable)"
+        - "Something else"
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: "What is shown, and what should it be?"
+      description: "Describe the difference. You can paste Arabic text."
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: "Screenshot and printed mushaf photo"
+      description: "Drag images here: a screenshot from the app and, if possible, a photo of the same page in a printed Taj Company 13-line mushaf."
+  - type: input
+    id: device
+    attributes:
+      label: "Phone and system"
+      placeholder: "e.g. Samsung A10, Android 11 / iPhone 12, iOS 18"

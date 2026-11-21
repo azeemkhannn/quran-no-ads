@@ -10,9 +10,15 @@ Free for everyone, with no ads and no tracking. **This app is not for sale.**
 |---|---|---|
 | <img src="docs/screenshots/home.jpg" width="240" alt="Home screen"> | <img src="docs/screenshots/reader.jpg" width="240" alt="13-line IndoPak page"> | <img src="docs/screenshots/about.jpg" width="240" alt="About and sources page"> |
 
-## Licences
+## Contributing
 
-The app's code libraries are MIT. The Quran font, text and page layout belong to their authors (QuranWBW, the Quranic Universal Library by Tarteel, and Taj Company), and permission requests are in progress. See [docs/LICENSES.md](docs/LICENSES.md).
+Contributions are welcome! The most valuable help is **reporting mistakes in the Quran text or layout**: use the [Quran text mistake form](https://github.com/azeemkhannn/quran-no-ads/issues/new?template=text_mistake.yml) with the page and line number. To help with code, read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, rules and good first issues. Please follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Licence
+
+- **Code:** [GPL-3.0-or-later](LICENSE). You may use and change it, but apps built from it must stay open source under the GPL.
+- **Font, Quran text and page layout:** not covered by the GPL. They belong to their authors (QuranWBW, the Quranic Universal Library by Tarteel, and Taj Company), and permission requests are in progress. See [NOTICE.md](NOTICE.md) and [docs/LICENSES.md](docs/LICENSES.md).
+- **App code libraries** (Expo, React Native, …): MIT, by their authors.
 
 ## Status
 - All **847 pages** render from the font plus layout data (no page images).

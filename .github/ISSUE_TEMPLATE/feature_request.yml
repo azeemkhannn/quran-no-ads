@@ -1,0 +1,23 @@
+name: "Feature idea"
+description: "Suggest an improvement. The app stays free, offline and ad-free."
+title: "[Idea] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: "What would help you while reading?"
+      description: "Describe the need, e.g. 'When memorising, I want to…'."
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: "Your idea"
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: "The app's principles"
+      options:
+        - label: "My idea needs no ads, tracking, accounts or internet connection, and keeps the app light for low-end phones."
+          required: true
