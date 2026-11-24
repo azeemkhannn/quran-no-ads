@@ -88,7 +88,7 @@ These cost a lot of time to get right, so please read them before touching `src/
 
 Look for issues labelled **good first issue**. Some ideas:
 
-- A Settings screen: keep screen awake while reading, font-size fine-tuning
+- A Settings screen: font-size fine-tuning
 - Tablet layout: two pages side by side in landscape
 - Hifz helper: hide or reveal lines for revision
 - An Urdu translation of the app's interface text

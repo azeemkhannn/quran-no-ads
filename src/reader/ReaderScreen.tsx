@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
+import { useKeepAwake } from 'expo-keep-awake';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PAGE_NUMBERS, TOTAL_PAGES, getPage } from '@/data/pages';
@@ -18,6 +19,8 @@ const STATUS_H = 34;
 // iOS turns pages with a small five-page pager: a FlatList of all pages opened on a far page could show
 // a blank page there (see PagePager). Android and web keep the FlatList, which works well there.
 const USE_PAGER = Platform.OS === 'ios';
+/** Next/Previous buttons: web only. On phones pages are turned by swiping. */
+const SHOW_ARROWS = Platform.OS === 'web';
 
 /** Back to the home page (or straight to it when the reader was opened from a link). */
 function goHome() {
@@ -47,6 +50,9 @@ export function ReaderScreen() {
   const [area, setArea] = useState<{ w: number; h: number } | null>(null);
   const listRef = useRef<FlatList<number>>(null);
   const insets = useSafeAreaInsets();
+  // The screen stays on while the reader is open (reading takes longer than the phone's sleep
+  // timer). Leaving the reader, or closing the app, lets the phone sleep normally again.
+  useKeepAwake('reader', { suppressDeactivateWarnings: true });
   const pagerRef = useRef<PagerHandle>(null);
   // Latest page index, for callbacks (refs can't be read during render).
   const indexRef = useRef(index);
@@ -169,9 +175,12 @@ export function ReaderScreen() {
           />
         </View>
 
-        <View style={styles.group}>
-          {/* Next page is on the left in an Arabic book. */}
-          <RoundButton icon="chevron-back" label="Next page" onPress={() => goTo(index + 1)} disabled={index >= TOTAL_PAGES - 1} theme={theme} solid />
+        <View style={styles.middle}>
+          {/* Phones turn pages by swiping, so the arrows are only shown on web (mouse and keyboard).
+              Next page is on the left in an Arabic book. */}
+          {SHOW_ARROWS && (
+            <RoundButton icon="chevron-back" label="Next page" onPress={() => goTo(index + 1)} disabled={index >= TOTAL_PAGES - 1} theme={theme} solid />
+          )}
           <Pressable
             onPress={() => setGoToOpen(true)}
             hitSlop={6}
@@ -179,11 +188,19 @@ export function ReaderScreen() {
             accessibilityLabel={`Page ${page} of ${TOTAL_PAGES}. Tap to go to a page`}
             style={({ pressed }) => [styles.pill, { backgroundColor: theme.frameSoft, borderColor: theme.frame, opacity: pressed ? 0.7 : 1 }]}
           >
-            <Text style={[styles.pillText, { color: theme.frame }]} allowFontScaling={false}>
-              {page}
+            <View style={[styles.pillIcon, { backgroundColor: theme.frame }]}>
+              <Ionicons name="book-outline" size={14} color={theme.paper} />
+            </View>
+            <Text style={styles.pillLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} maxFontSizeMultiplier={1.3}>
+              <Text style={[styles.pillPage, { color: theme.frame }]}>{page}</Text>
+              <Text style={[styles.pillTotal, { color: theme.muted }]}> / {TOTAL_PAGES}</Text>
             </Text>
+            {/* Hint that tapping opens Go to page (no room for it beside the web arrows). */}
+            {!SHOW_ARROWS && <Ionicons name="search" size={16} color={theme.frame} />}
           </Pressable>
-          <RoundButton icon="chevron-forward" label="Previous page" onPress={() => goTo(index - 1)} disabled={index <= 0} theme={theme} solid />
+          {SHOW_ARROWS && (
+            <RoundButton icon="chevron-forward" label="Previous page" onPress={() => goTo(index - 1)} disabled={index <= 0} theme={theme} solid />
+          )}
         </View>
 
         <RoundButton icon={theme.icon} label={`Theme: ${theme.label}. Tap to change`} onPress={cycleTheme} theme={theme} />
@@ -298,9 +315,14 @@ const styles = StyleSheet.create({
   toolbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 10 },
   group: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   round: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
+  // Middle of the toolbar: grows to fill the space between the side buttons.
+  middle: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginHorizontal: 8 },
   pill: {
-    minWidth: 64, height: 42, borderRadius: 21, borderWidth: StyleSheet.hairlineWidth * 2, paddingHorizontal: 14,
-    alignItems: 'center', justifyContent: 'center',
+    flex: 1, maxWidth: 240, minWidth: 110, height: 42, borderRadius: 21, borderWidth: StyleSheet.hairlineWidth * 2,
+    paddingLeft: 5, paddingRight: 12, flexDirection: 'row', alignItems: 'center', gap: 6,
   },
-  pillText: { fontSize: 16, fontWeight: '700' },
+  pillIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  pillLabel: { flex: 1, textAlign: 'center' },
+  pillPage: { fontSize: 18, fontWeight: '800' },
+  pillTotal: { fontSize: 13, fontWeight: '600' },
 });

@@ -161,6 +161,16 @@ export function AboutScreen() {
           </Pressable>
         </Section>
 
+        <Pressable
+          onPress={() => router.push({ pathname: '/welcome', params: { again: '1' } })}
+          accessibilityRole="button"
+          accessibilityLabel="Show the welcome screens again"
+          style={({ pressed }) => [styles.reportBtnOutline, { borderColor: theme.frame, opacity: pressed ? 0.7 : 1 }]}
+        >
+          <Ionicons name="sparkles-outline" size={17} color={theme.frame} />
+          <Text style={[styles.reportText, { color: theme.frame }]}>Show welcome again</Text>
+        </Pressable>
+
         <Text style={[styles.footer, { color: theme.muted }]}>Quran No Ads · version {version}</Text>
       </ScrollView>
     </View>

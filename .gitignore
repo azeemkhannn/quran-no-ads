@@ -45,3 +45,7 @@ yarn-error.*
 
 # Private drafts (kept locally, not published)
 docs/permission-emails.md
+docs/play-store/
+
+# Signing keys (never commit)
+*.keystore

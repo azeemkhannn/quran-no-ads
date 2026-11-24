@@ -8,6 +8,8 @@ import { JUZ, SURAHS, TOTAL_PAGES, getPage, surahAtPage, type SurahInfo } from '
 import { PARA_NAMES } from '@/data/meta';
 import { readerStore, useReaderStore, type Bookmark, type ReadingMode, type Recent } from '@/store/reader-store';
 import { BackgroundMeasurer } from '@/reader/LineMeasurer';
+import { REMINDER_SUPPORTED, formatTime } from '@/reminder/reminder';
+import { ReminderSheet } from '@/reminder/ReminderSheet';
 import { THEMES, THEME_ORDER, type Theme, type ThemeName } from '@/theme';
 
 type Tab = 'surahs' | 'paras' | 'bookmarks';
@@ -51,6 +53,7 @@ export function HomeScreen() {
   const lastPage = useReaderStore((s) => s.lastPage, live);
   const bookmarks = useReaderStore((s) => s.bookmarks, live);
   const recents = useReaderStore((s) => s.recents, live);
+  const reminder = useReaderStore((s) => s.reminder, live);
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<Tab>('surahs');
   const [query, setQuery] = useState('');
@@ -110,7 +113,9 @@ export function HomeScreen() {
         keyExtractor={itemKey}
         renderItem={renderItem}
         extraData={theme}
-        ListHeaderComponent={<HomeHeader theme={theme} themeName={themeName} lastPage={lastPage} recents={recents} />}
+        ListHeaderComponent={
+          <HomeHeader theme={theme} themeName={themeName} lastPage={lastPage} recents={recents} reminder={reminder} />
+        }
         // Index 0 is the header above; index 1 is the tabs + search bar, pinned while the list scrolls.
         stickyHeaderIndices={[1]}
         keyboardShouldPersistTaps="handled"
@@ -139,10 +144,30 @@ function itemKey(item: Item): string {
 
 // ---------- Header (scrolls away) ----------
 
+/** Bell next to the theme button: opens the daily reminder settings (on/off and time). */
+function ReminderButton({ theme, on }: { theme: Theme; on: boolean }) {
+  const [open, setOpen] = useState(false);
+  const time = useReaderStore((s) => s.reminderTime);
+  return (
+    <>
+      <Pressable
+        onPress={() => setOpen(true)}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={on ? `Daily reminder on at ${formatTime(time)}. Tap to change` : 'Daily reminder off. Tap to set it up'}
+        style={({ pressed }) => [styles.headerBtn, { backgroundColor: theme.frameSoft, opacity: pressed ? 0.7 : 1 }]}
+      >
+        <Ionicons name={on ? 'notifications' : 'notifications-off-outline'} size={20} color={theme.frame} />
+      </Pressable>
+      {open && <ReminderSheet theme={theme} onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
 function HomeHeader({
-  theme, themeName, lastPage, recents,
+  theme, themeName, lastPage, recents, reminder,
 }: {
-  theme: Theme; themeName: ThemeName; lastPage: number; recents: Recent[];
+  theme: Theme; themeName: ThemeName; lastPage: number; recents: Recent[]; reminder: boolean | null;
 }) {
   const current = getPage(lastPage);
   const surah = surahAtPage(lastPage);
@@ -158,6 +183,7 @@ function HomeHeader({
           <Text style={[styles.title, { color: theme.ink }]}>Quran No Ads</Text>
           <Text style={[styles.tagline, { color: theme.muted }]}>IndoPak 13-line mushaf · offline · free</Text>
         </View>
+        {REMINDER_SUPPORTED && <ReminderButton theme={theme} on={reminder === true} />}
         <Pressable
           onPress={cycleTheme}
           hitSlop={8}

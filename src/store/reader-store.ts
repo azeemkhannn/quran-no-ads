@@ -17,6 +17,18 @@ export type Recent = { surah: number; page: number; at: number };
  */
 export type ReadingMode = 'continue' | 'temporary';
 
+export type ReminderTime = { hour: number; minute: number };
+export const DEFAULT_REMINDER_TIME: ReminderTime = { hour: 5, minute: 0 };
+
+/** "05:30" → { hour: 5, minute: 30 }; anything invalid → the default time. */
+function parseTime(raw: string | null): ReminderTime {
+  const m = raw?.match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return DEFAULT_REMINDER_TIME;
+  const hour = Number(m[1]);
+  const minute = Number(m[2]);
+  return hour <= 23 && minute <= 59 ? { hour, minute } : DEFAULT_REMINDER_TIME;
+}
+
 type State = {
   /** The Continue reading place (saved on the device). */
   lastPage: number;
@@ -28,9 +40,18 @@ type State = {
   theme: ThemeName;
   bookmarks: Bookmark[]; // newest first
   recents: Recent[]; // newest first
+  /** Daily reading reminder: on, off, or null when it has never been offered (first launch). */
+  reminder: boolean | null;
+  /** Time of the daily reminder, 24-hour clock (default 5:00 AM). */
+  reminderTime: ReminderTime;
+  /** The welcome screens have been shown (they appear once, on a new install only). */
+  welcomed: boolean;
 };
 
-const KEYS = { lastPage: 'lastPage', theme: 'theme', bookmarks: 'bookmarks', recents: 'recents' } as const;
+const KEYS = {
+  lastPage: 'lastPage', theme: 'theme', bookmarks: 'bookmarks', recents: 'recents', reminder: 'reminder', welcomed: 'welcomed',
+  reminderTime: 'reminderTime',
+} as const;
 const MAX_RECENTS = 6;
 const validPage = (p: unknown): p is number => Number.isInteger(p) && (p as number) >= 1 && (p as number) <= TOTAL_PAGES;
 
@@ -43,9 +64,25 @@ function loadList<T extends { page: number }>(key: string): T[] {
   }
 }
 
+/**
+ * Welcome screens are for new installs only. Someone updating from an older version already has
+ * saved data (a reading place, bookmarks, recents, a reminder choice or measured line widths), so they
+ * count as welcomed and never see them.
+ */
+function loadWelcomed(): boolean {
+  if (storage.get(KEYS.welcomed) === '1') return true;
+  // Not the theme: it can be picked on the welcome screens themselves.
+  const existingUser = [KEYS.lastPage, KEYS.bookmarks, KEYS.recents, KEYS.reminder, 'lineWidths:v3'].some(
+    (k) => storage.get(k) !== null,
+  );
+  if (existingUser) storage.set(KEYS.welcomed, '1');
+  return existingUser;
+}
+
 function load(): State {
   const page = Number(storage.get(KEYS.lastPage));
   const theme = storage.get(KEYS.theme);
+  const reminder = storage.get(KEYS.reminder);
   const lastPage = validPage(page) ? page : 1;
   return {
     lastPage,
@@ -53,6 +90,9 @@ function load(): State {
     theme: theme === 'sepia' || theme === 'night' || theme === 'light' ? theme : 'light',
     bookmarks: loadList<Bookmark>(KEYS.bookmarks),
     recents: loadList<Recent>(KEYS.recents),
+    reminder: reminder === 'on' ? true : reminder === 'off' ? false : null,
+    reminderTime: parseTime(storage.get(KEYS.reminderTime)),
+    welcomed: loadWelcomed(),
   };
 }
 
@@ -107,6 +147,21 @@ export const readerStore = {
   setTheme(theme: ThemeName) {
     update({ theme });
     storage.set(KEYS.theme, theme);
+  },
+  /** The welcome screens were completed: never show them automatically again. */
+  finishWelcome() {
+    update({ welcomed: true });
+    storage.set(KEYS.welcomed, '1');
+  },
+  /** Only records the time; rescheduling is done by src/reminder. */
+  setReminderTime(time: ReminderTime) {
+    update({ reminderTime: time });
+    storage.set(KEYS.reminderTime, `${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}`);
+  },
+  /** Only records the choice; scheduling is done by src/reminder. */
+  setReminder(on: boolean) {
+    update({ reminder: on });
+    storage.set(KEYS.reminder, on ? 'on' : 'off');
   },
   toggleBookmark(page: number) {
     const exists = state.bookmarks.some((b) => b.page === page);

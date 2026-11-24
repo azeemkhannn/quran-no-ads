@@ -25,7 +25,7 @@ Checked on 21 November 2026. This is a practical summary, not legal advice.
 | To | How | Status |
 |---|---|---|
 | QuranWBW (font and IndoPak text) | Email to quranwbw@gmail.com | Waiting for reply |
-| QUL / Tarteel (layout, script, metadata) | GitHub issue [TarteelAI/quranic-universal-library#1085](https://github.com/TarteelAI/quranic-universal-library/issues/1085), using their "Licence or permission" form | Waiting for reply |
+| QUL / Tarteel (layout, script, font, metadata) | One GitHub issue per resource, filed with their "Licence or permission" form: [#1106](https://github.com/TarteelAI/quranic-universal-library/issues/1106) layout 313, [#1107](https://github.com/TarteelAI/quranic-universal-library/issues/1107) script 59, [#1108](https://github.com/TarteelAI/quranic-universal-library/issues/1108) font 242, [#1109](https://github.com/TarteelAI/quranic-universal-library/issues/1109) metadata. They replace [#1085](https://github.com/TarteelAI/quranic-universal-library/issues/1085), closed on 24 Nov 2026. | Waiting for reply |
 | Taj Company (13-line layout) | Email to orders@tajquran.com, the only email on tajquran.com | Waiting for reply |
 | KFGQPC (ayah-number glyphs) | Not sent: depends on QuranWBW's answer | — |
 

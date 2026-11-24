@@ -10,7 +10,7 @@ import sys
 from collections import deque
 
 import numpy as np
-from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageOps
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont, ImageOps
 
 SRC = sys.argv[1] if len(sys.argv) > 1 else "assets/images/icon-source.webp"
 OUT = "assets/"
@@ -82,6 +82,21 @@ def on_layer(img: Image.Image, scale: float, feather: int = 0) -> Image.Image:
     return layer
 
 
+def notification_icon(size: int = 96) -> Image.Image:
+    """Android status-bar icon: a plain white open book (Ionicons "book") on transparent.
+
+    The app icon is too detailed to read at 24dp, and Android draws only the alpha channel.
+    """
+    font_path = "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf"
+    font = ImageFont.truetype(font_path, int(size * 0.84))
+    img = Image.new("RGBA", (size, size), (255, 255, 255, 0))
+    draw = ImageDraw.Draw(img)
+    glyph = chr(61861)  # "book" in Ionicons.json
+    l, t, r, b = draw.textbbox((0, 0), glyph, font=font)
+    draw.text(((size - (r - l)) / 2 - l, (size - (b - t)) / 2 - t), glyph, font=font, fill=(255, 255, 255, 255))
+    return img
+
+
 def main() -> None:
     src = Image.open(SRC).convert("RGB")
     if src.width != src.height:
@@ -113,8 +128,10 @@ def main() -> None:
     tile.putalpha(ImageOps.invert(mask.filter(ImageFilter.GaussianBlur(1.5))))
     tile.resize((SIZE, SIZE), Image.LANCZOS).save(OUT + "splash-icon.png")
 
+    notification_icon().save(OUT + "notification-icon.png")
+
     for name in ("icon", "favicon", "ios-icon-tinted", "android-icon-background",
-                 "android-icon-foreground", "android-icon-monochrome", "splash-icon"):
+                 "android-icon-foreground", "android-icon-monochrome", "splash-icon", "notification-icon"):
         print("wrote", OUT + name + ".png")
 
 
