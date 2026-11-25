@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { router, useIsFocused } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { JUZ, SURAHS, TOTAL_PAGES, getPage, surahAtPage, type SurahInfo } from '@/data/pages';
 import { PARA_NAMES } from '@/data/meta';
-import { readerStore, useReaderStore, type Bookmark, type ReadingMode, type Recent } from '@/store/reader-store';
+import { readerStore, useReaderStore, type Bookmark, type ReadingMode } from '@/store/reader-store';
 import { BackgroundMeasurer } from '@/reader/LineMeasurer';
 import { REMINDER_SUPPORTED, formatTime } from '@/reminder/reminder';
 import { ReminderSheet } from '@/reminder/ReminderSheet';
@@ -52,7 +52,6 @@ export function HomeScreen() {
   const theme = THEMES[themeName];
   const lastPage = useReaderStore((s) => s.lastPage, live);
   const bookmarks = useReaderStore((s) => s.bookmarks, live);
-  const recents = useReaderStore((s) => s.recents, live);
   const reminder = useReaderStore((s) => s.reminder, live);
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<Tab>('surahs');
@@ -114,7 +113,7 @@ export function HomeScreen() {
         renderItem={renderItem}
         extraData={theme}
         ListHeaderComponent={
-          <HomeHeader theme={theme} themeName={themeName} lastPage={lastPage} recents={recents} reminder={reminder} />
+          <HomeHeader theme={theme} themeName={themeName} lastPage={lastPage} reminder={reminder} />
         }
         // Index 0 is the header above; index 1 is the tabs + search bar, pinned while the list scrolls.
         stickyHeaderIndices={[1]}
@@ -165,9 +164,9 @@ function ReminderButton({ theme, on }: { theme: Theme; on: boolean }) {
 }
 
 function HomeHeader({
-  theme, themeName, lastPage, recents, reminder,
+  theme, themeName, lastPage, reminder,
 }: {
-  theme: Theme; themeName: ThemeName; lastPage: number; recents: Recent[]; reminder: boolean | null;
+  theme: Theme; themeName: ThemeName; lastPage: number; reminder: boolean | null;
 }) {
   const current = getPage(lastPage);
   const surah = surahAtPage(lastPage);
@@ -241,46 +240,6 @@ function HomeHeader({
           </View>
         </View>
       </Pressable>
-
-      {recents.length > 0 && <RecentRow theme={theme} recents={recents} />}
-    </View>
-  );
-}
-
-// ---------- Recently read ----------
-
-/**
- * Surahs read on the side (daily Ya-Sin, Al-Kahf on Friday…), each reopening where it was left,
- * without touching the Continue reading place.
- */
-function RecentRow({ theme, recents }: { theme: Theme; recents: Recent[] }) {
-  return (
-    <View style={styles.recentBlock}>
-      <Text style={[styles.recentTitle, { color: theme.muted }]}>RECENTLY READ</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recentList}>
-        {recents.map((r) => {
-          const s = SURAHS[r.surah - 1];
-          return (
-            <Pressable
-              key={r.surah}
-              onPress={() => openReader(r.page, 'temporary', r.surah)}
-              onLongPress={() => readerStore.removeRecent(r.surah)}
-              accessibilityRole="button"
-              accessibilityLabel={`${s.name}, page ${r.page}. Long press to remove`}
-              style={({ pressed }) => [
-                styles.recentChip,
-                { backgroundColor: theme.paper, borderColor: theme.frameSoft, opacity: pressed ? 0.7 : 1 },
-              ]}
-            >
-              <Text style={[styles.recentArabic, { color: theme.frame }]}>{s.nameAr}</Text>
-              <View>
-                <Text style={[styles.recentName, { color: theme.ink }]} numberOfLines={1}>{s.name}</Text>
-                <Text style={[styles.recentPage, { color: theme.muted }]}>page. {r.page}</Text>
-              </View>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
     </View>
   );
 }
@@ -481,7 +440,7 @@ function Empty({ theme, icon, title, text }: { theme: Theme; icon: IconName; tit
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  headerBlock: { paddingTop: 10, paddingBottom: 6 },
+  headerBlock: { paddingTop: 10, paddingBottom: 14 },
   header: { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: 20, marginBottom: 12, gap: 12 },
   appArabic: { fontSize: 15, fontWeight: '700', textAlign: 'left', writingDirection: 'ltr' },
   title: { fontSize: 30, fontWeight: '800', letterSpacing: -0.5, marginTop: 2 },
@@ -508,17 +467,6 @@ const styles = StyleSheet.create({
   progressFill: { height: 6, borderRadius: 3 },
   progressText: { fontSize: 13, fontWeight: '700', minWidth: 34, textAlign: 'right' },
   heroGo: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-
-  recentBlock: { marginTop: 16 },
-  recentTitle: { fontSize: 11, fontWeight: '800', letterSpacing: 1, marginHorizontal: 20, marginBottom: 8 },
-  recentList: { paddingHorizontal: 16, gap: 8 },
-  recentChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: 8,
-    borderRadius: 16, borderWidth: 1.5,
-  },
-  recentArabic: { fontSize: 18, fontWeight: '700' },
-  recentName: { fontSize: 13, fontWeight: '700', maxWidth: 110 },
-  recentPage: { fontSize: 11, marginTop: 1 },
 
   controls: { paddingTop: 10, paddingBottom: 10, gap: 10, borderBottomWidth: StyleSheet.hairlineWidth },
   segment: { flexDirection: 'row', marginHorizontal: 16, borderRadius: 14, padding: 4 },

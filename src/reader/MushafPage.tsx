@@ -10,7 +10,8 @@ import {
 } from './layout';
 import { RTL_ROW, WordUnit } from './WordUnit';
 
-export const QURAN_FONT = 'IndoPakNastaleeq';
+// QuranWBW's AlQuranNeo v5.x font (IndoPak v5.4), used unmodified and ONLY for Quran text.
+export const QURAN_FONT = 'AlQuranNeo';
 
 type Props = { page: Page; layout: PageLayout; theme: Theme; bookmarked?: boolean };
 
@@ -79,6 +80,15 @@ function MushafPageImpl({ page, layout, theme, bookmarked }: Props) {
             ]}
           >
             <View style={{ width: isOpening ? blockWidth * 0.72 : blockWidth, alignSelf: 'center' }}>
+              {/* Faint ruled line between rows, as in a printed mushaf. Drawn behind the text and
+                  inside each row's height, so it never moves a word. */}
+              {page.lines.slice(1).map((l, i) => (
+                <View
+                  key={`rule-${l.line}`}
+                  pointerEvents="none"
+                  style={[styles.rule, { top: lineHeight * (i + 1), backgroundColor: theme.frame }]}
+                />
+              ))}
               {page.lines.map(renderLine)}
             </View>
           </View>
@@ -185,12 +195,14 @@ function SurahHeader({ surah, height, fontSize, theme }: { surah: number; height
       <View style={[styles.surahBox, { height: boxH, borderRadius: boxH / 2, borderColor: theme.frame, backgroundColor: theme.frameSoft }]}>
         <View style={[styles.surahBoxInner, { borderRadius: boxH / 2 - 3, borderColor: theme.frame }]}>
           <View style={[styles.surahDot, { backgroundColor: theme.frame }]} />
-          {/* One Text per word: on Android a Text with spaces can wrap a word onto a hidden line. */}
+          {/* The surah name is not Quran text, so it uses the phone's Arabic font, not the Quran font
+              (QuranWBW's permission covers the Quran text only). One Text per word: on Android a
+              Text with spaces can wrap a word onto a hidden line. */}
           <View style={{ flexDirection: RTL_ROW, columnGap: fontSize * 0.25 }}>
-            {['سُوْرَةُ', ...SURAHS[surah - 1].nameAr.split(' ')].map((w, i) => (
+            {['سورۃ', ...SURAHS[surah - 1].nameAr.split(' ')].map((w, i) => (
               <Text
                 key={i}
-                style={[styles.quran, { color: theme.ink, fontSize: fontSize * 0.8, lineHeight: boxH * 0.9 }]}
+                style={[styles.surahName, { color: theme.ink, fontSize: fontSize * 0.62, lineHeight: boxH * 0.9 }]}
                 allowFontScaling={false}
               >
                 {w}
@@ -245,7 +257,9 @@ const styles = StyleSheet.create({
   },
   pageNumber: { fontSize: 13, fontWeight: '700', textAlign: 'center', includeFontPadding: false, textAlignVertical: 'center' },
   slot: { width: '100%', alignItems: 'center' },
+  rule: { position: 'absolute', left: 0, right: 0, height: StyleSheet.hairlineWidth, opacity: 0.28 },
   quran: { fontFamily: QURAN_FONT, textAlign: 'center', includeFontPadding: false, textAlignVertical: 'center' },
+  surahName: { fontWeight: '700', textAlign: 'center', includeFontPadding: false, textAlignVertical: 'center' },
   surahBox: { width: '100%', borderWidth: 1.5, padding: 2 },
   surahBoxInner: {
     flex: 1, borderWidth: StyleSheet.hairlineWidth * 2, flexDirection: 'row',

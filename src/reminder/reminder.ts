@@ -95,7 +95,8 @@ export async function turnOffReminder() {
 
 /**
  * Called once at app start.
- * - New install: does nothing; the last welcome screen offers the reminder.
+ * - New install: does nothing until the welcome screens are done; finishing them calls this again,
+ *   which shows the phone's notification permission prompt once (over Home).
  * - Welcomed but never offered (an update from before reminders existed): offers it once.
  * - Later: if the reminder is on, makes sure it is still scheduled (for example after an app update
  *   or a backup restore), and turns it off if notifications were blocked in the phone settings.
@@ -103,7 +104,7 @@ export async function turnOffReminder() {
 export async function initReminder() {
   try {
     const { reminder, welcomed } = readerStore.getState();
-    // New install: the last welcome screen offers the reminder, so don't ask at launch.
+    // New install: wait until the welcome screens are done (they call this again at the end).
     if (!welcomed) return;
     if (reminder === null) {
       await turnOnReminder();

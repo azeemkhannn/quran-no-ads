@@ -16,7 +16,13 @@ Many people read the Quran on old, cheap or slow phones. Quran No Ads is built t
 
 ## Download
 
-- **Android:** download the APK from the [latest release](https://github.com/azeemkhannn/quran-no-ads/releases/latest) and open it on your phone. You may need to allow "Install unknown apps" for your browser or file manager.
+<p align="center">
+  <a href="https://github.com/azeemkhannn/quran-no-ads/releases/latest/download/AlQuran.apk">
+    <img src="https://img.shields.io/badge/Download-Android%20APK-1F6F5B?style=for-the-badge&logo=android&logoColor=white" alt="Download the Android APK" height="48">
+  </a>
+</p>
+
+- **Android:** tap the button above to download the latest APK (it is called **Al Quran** on your phone), then open it. You may need to allow "Install unknown apps" for your browser or file manager. All versions and their changes are on the [releases page](https://github.com/azeemkhannn/quran-no-ads/releases).
 - **iPhone:** not published yet. Apple requires a paid developer account to sign iPhone apps; until then you can run it with Expo Go (see [Run](#run)).
 
 ## Screenshots
@@ -32,7 +38,7 @@ Contributions are welcome! The most valuable help is **reporting mistakes in the
 ## Licence
 
 - **Code:** [GPL-3.0-or-later](LICENSE). You may use and change it, but apps built from it must stay open source under the GPL.
-- **Font, Quran text and page layout:** not covered by the GPL. They belong to their authors (QuranWBW, the Quranic Universal Library by Tarteel, and Taj Company), and permission requests are in progress. See [NOTICE.md](NOTICE.md) and [docs/LICENSES.md](docs/LICENSES.md).
+- **Font, Quran text and page layout:** not covered by the GPL. They belong to their authors (QuranWBW, the Quranic Universal Library by Tarteel, and Taj Company), QuranWBW has given written permission for the Quran text and font; the layout requests to QUL and Taj Company are in progress. The font is not in this repository. See [NOTICE.md](NOTICE.md) and [docs/LICENSES.md](docs/LICENSES.md).
 - **App code libraries** (Expo, React Native, …): MIT, by their authors.
 
 ## Status
@@ -93,7 +99,7 @@ The data is bundled as compact JSON rather than SQLite because it is read-only a
 - Test on more real Android and iOS phones, especially small screens and low-end Android.
 - Publish on Google Play and the App Store.
 - Have a hafiz proofread every page against the printed Taj 13-line mushaf. One known item: QUL encodes the ayah-1 marker of Al-Fatiha's Bismillah with a different glyph (U+F61E) that shows as an empty circle.
-- Wait for the permission replies from QUL/Tarteel, QuranWBW and Taj Company (see [docs/LICENSES.md](docs/LICENSES.md)).
+- Wait for the permission replies from QUL/Tarteel and Taj Company (QuranWBW has granted permission; see [docs/LICENSES.md](docs/LICENSES.md)).
 
 ## Building a release
 
@@ -102,6 +108,5 @@ The data is bundled as compact JSON rather than SQLite because it is read-only a
 - **iOS:** needs a Mac with Xcode, or EAS Build, plus an Apple Developer account.
 
 ## Credits
-- The font is "Indopak Nastaleeq" (Hanafi v4.2.2 with waqf lazim) from the Quranic Universal Library (Tarteel). Its embedded credits name Al Qalam, Ghandhara, KFGQPC and Ayman Siddiqui.
-- One technical change to the font: `scripts/patch_font.py` adds a single character-map entry, U+202F → the font's own `space` glyph. No glyph is added or edited. Android splits text at normal spaces before shaping, which broke the waqf signs and ayah circles, and this entry lets the app use U+202F inside words on Android and web instead. Re-run the script whenever the font is replaced. Mention this change when asking QUL for permission.
+- **Quran text and font:** IndoPak Quran text v5.4 (Hanafi) and the AlQuranNeo font by QuranWBW.com (Ayman Siddiqui & R. Siddiqua), used **unmodified** with prior written permission from QuranWBW, for displaying the Quran text only. © Ayman Siddiqui · © Al-Qalam and Ghandhara Software · © King Fahd Glorious Quran Printing Complex (KFGQPC). Text sources: KFGQPC, TypeMyBook.com (Ata Rafi), InPage Quran publishing resources. Verified by Hafiz Muhammad Zain Viqar (Deen App) and his team of huffaz. Special thanks: Abdul Majeed Khan, Arif Karim, Shakir-ul-Qadree and Jawad (Al Qalam Quran Majeed font). The font is not in this repository, at QuranWBW's request.
 - The layout, words and metadata come from the QUL "Indopak 13 lines (Taj company)" layout, the IndoPak Nastaleeq word-by-word script, and QUL's surah and juz metadata.

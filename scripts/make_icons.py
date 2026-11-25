@@ -82,18 +82,23 @@ def on_layer(img: Image.Image, scale: float, feather: int = 0) -> Image.Image:
     return layer
 
 
-def notification_icon(size: int = 96) -> Image.Image:
-    """Android status-bar icon: a plain white open book (Ionicons "book") on transparent.
+def notification_icon(mono: Image.Image, size: int = 96) -> Image.Image:
+    """Android notification icon: the app icon's artwork (arch, title, book) as a white silhouette.
 
-    The app icon is too detailed to read at 24dp, and Android draws only the alpha channel.
+    Android draws only the alpha channel of this icon (in the app colour), so it is the same shape
+    as the themed icon, cropped tight and made crisp so it still reads at 24dp.
     """
-    font_path = "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf"
-    font = ImageFont.truetype(font_path, int(size * 0.84))
+    art = mono.crop(mono.getbbox())
+    side = max(art.size)
+    square = Image.new("RGBA", (side, side), (255, 255, 255, 0))
+    square.alpha_composite(art, ((side - art.width) // 2, (side - art.height) // 2))
+    pad = round(size * 0.04)
+    small = square.resize((size - 2 * pad, size - 2 * pad), Image.LANCZOS)
+    alpha = small.getchannel("A").point(lambda v: 255 if v > 90 else (0 if v < 30 else v * 2))
     img = Image.new("RGBA", (size, size), (255, 255, 255, 0))
-    draw = ImageDraw.Draw(img)
-    glyph = chr(61861)  # "book" in Ionicons.json
-    l, t, r, b = draw.textbbox((0, 0), glyph, font=font)
-    draw.text(((size - (r - l)) / 2 - l, (size - (b - t)) / 2 - t), glyph, font=font, fill=(255, 255, 255, 255))
+    white = Image.new("RGBA", small.size, (255, 255, 255, 255))
+    white.putalpha(alpha)
+    img.alpha_composite(white, (pad, pad))
     return img
 
 
@@ -128,7 +133,7 @@ def main() -> None:
     tile.putalpha(ImageOps.invert(mask.filter(ImageFilter.GaussianBlur(1.5))))
     tile.resize((SIZE, SIZE), Image.LANCZOS).save(OUT + "splash-icon.png")
 
-    notification_icon().save(OUT + "notification-icon.png")
+    notification_icon(mono).save(OUT + "notification-icon.png")
 
     for name in ("icon", "favicon", "ios-icon-tinted", "android-icon-background",
                  "android-icon-foreground", "android-icon-monochrome", "splash-icon", "notification-icon"):

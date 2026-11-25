@@ -10,20 +10,21 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getPage } from '@/data/pages';
 import { QURAN_FONT } from '@/reader/MushafPage';
 import { RTL_ROW, WordUnit } from '@/reader/WordUnit';
-import { REMINDER_SUPPORTED, formatTime, turnOnReminder } from '@/reminder/reminder';
+import { initReminder } from '@/reminder/reminder';
 import { readerStore, useReaderStore } from '@/store/reader-store';
 import { THEMES, THEME_ORDER, type Theme, type ThemeName } from '@/theme';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
-const SLIDES = 5;
+const SLIDES = 4;
 /** Green tick on "Works offline", the same in every theme. */
 const OK_GREEN = '#2E9E6A';
 
 /**
  * Welcome screens, shown once on a new install (and again from About on request).
- * Five screens: welcome, reading, themes, your place, daily reminder. There is no Skip: the screens
- * are short, and the last one is where the reminder permission is asked.
+ * Four screens: welcome, reading, themes, your place. There is no Skip: the screens are short.
+ * The daily reminder is not a screen here: right after the last one, the phone asks for
+ * notification permission over Home (see initReminder).
  */
 export function WelcomeScreen() {
   const theme = THEMES[useReaderStore((s) => s.theme)];
@@ -44,8 +45,13 @@ export function WelcomeScreen() {
   const finish = () => {
     readerStore.finishWelcome();
     // Opened again from About: go back there. First launch: Home replaces the welcome screens.
-    if (again && router.canGoBack()) router.back();
-    else router.replace('/');
+    if (again && router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/');
+    // First launch: once Home is showing, offer the daily reminder (the phone's permission prompt).
+    setTimeout(initReminder, 600);
   };
 
   const last = slide === SLIDES - 1;
@@ -72,7 +78,6 @@ export function WelcomeScreen() {
             <Slide width={width}><ReadingSlide theme={theme} /></Slide>
             <Slide width={width}><ThemeSlide theme={theme} /></Slide>
             <Slide width={width}><PlaceSlide theme={theme} /></Slide>
-            <Slide width={width}><ReminderSlide theme={theme} onDone={finish} /></Slide>
           </ScrollView>
         )}
       </View>
@@ -86,21 +91,16 @@ export function WelcomeScreen() {
             />
           ))}
         </View>
-        {/* The last screen has its own buttons (turn on the reminder, or not now); keep the space so
-            the dots don't jump. */}
-        {last ? (
-          <View style={styles.primarySpace} />
-        ) : (
-          <Pressable
-            onPress={() => goToSlide(slide + 1)}
-            accessibilityRole="button"
-            accessibilityLabel="Next"
-            style={({ pressed }) => [styles.primary, { backgroundColor: theme.frame, opacity: pressed ? 0.85 : 1 }]}
-          >
-            <Text style={[styles.primaryText, { color: theme.paper }]}>Next</Text>
-            <Ionicons name="arrow-forward" size={18} color={theme.paper} />
-          </Pressable>
-        )}
+        <Pressable
+          onPress={last ? finish : () => goToSlide(slide + 1)}
+          accessibilityRole="button"
+          accessibilityLabel={last ? 'Start reading' : 'Next'}
+          style={({ pressed }) => [styles.primary, { backgroundColor: theme.frame, opacity: pressed ? 0.85 : 1 }]}
+        >
+          {last && <Ionicons name="book" size={18} color={theme.paper} />}
+          <Text style={[styles.primaryText, { color: theme.paper }]}>{last ? 'Start reading' : 'Next'}</Text>
+          {!last && <Ionicons name="arrow-forward" size={18} color={theme.paper} />}
+        </Pressable>
       </View>
     </View>
   );
@@ -176,7 +176,7 @@ function MiniPage({ theme }: { theme: Theme }) {
     <View style={[styles.miniPage, { backgroundColor: theme.paper, borderColor: theme.frame }]}>
       <View style={[styles.miniInner, { borderColor: theme.frame }]}>
         <View style={[styles.miniHeader, { backgroundColor: theme.frameSoft, borderColor: theme.frame }]}>
-          <Text style={[styles.miniHeaderText, { color: theme.ink }]} allowFontScaling={false}>سُوْرَةُ الْفَاتِحَة</Text>
+          <Text style={[styles.miniHeaderText, { color: theme.ink }]} allowFontScaling={false}>سورۃ الفاتحة</Text>
         </View>
         {lines.map((l) => (
           <View key={l.line} style={[styles.miniLine, { flexDirection: RTL_ROW }]}>
@@ -233,7 +233,7 @@ function ThemeCard({ name, selected }: { name: ThemeName; selected: boolean }) {
       ]}
     >
       <View style={[styles.themePage, { backgroundColor: t.paper, borderColor: t.frame }]}>
-        <Text style={[styles.themeArabic, { color: t.ink }]} allowFontScaling={false}>بِسْمِ اللّٰهِ</Text>
+        <Text style={[styles.themeArabic, { color: t.ink }]} allowFontScaling={false}>القرآن الكريم</Text>
         {[0.9, 1, 0.8, 1, 0.95, 0.85, 1, 0.6].map((w, i) => (
           <View key={i} style={[styles.themeBar, { width: `${w * 100}%`, backgroundColor: t.ink, opacity: 0.22 }]} />
         ))}
@@ -268,89 +268,11 @@ function PlaceSlide({ theme }: { theme: Theme }) {
         text="The app remembers where you stopped. No setting up, no questions."
       />
       <View style={styles.features}>
-        <Feature theme={theme} icon="time-outline" text="Read a surah on the side, like a daily Ya-Sin. It appears under Recently read and your main place stays." />
+        <Feature theme={theme} icon="time-outline" text="Read a surah on the side, like a daily Ya-Sin. Your main place stays where it was." />
         <Feature theme={theme} icon="list" text="Find any surah or para from the lists on Home." />
         <Feature theme={theme} icon="bookmark-outline" text="Bookmark pages to come back to them." />
       </View>
     </>
-  );
-}
-
-// ---------- 5. Daily reminder ----------
-
-function ReminderSlide({ theme, onDone }: { theme: Theme; onDone: () => void }) {
-  const [busy, setBusy] = useState(false);
-  const timeLabel = formatTime(useReaderStore((s) => s.reminderTime));
-
-  if (!REMINDER_SUPPORTED) {
-    // Web: no reminders, so the last screen just says you're ready.
-    return (
-      <>
-        <View style={[styles.bigIcon, { backgroundColor: theme.frameSoft }]}>
-          <Ionicons name="checkmark-done" size={46} color={theme.frame} />
-        </View>
-        <Heading theme={theme} kicker="ALL SET" title="You're ready" text="May Allah make it easy for you to read every day." />
-        <PrimaryButton theme={theme} icon="book" label="Start reading" onPress={onDone} />
-      </>
-    );
-  }
-
-  const turnOn = async () => {
-    setBusy(true);
-    await turnOnReminder(); // asks for notification permission; if refused, the reminder stays off
-    onDone();
-  };
-  const notNow = () => {
-    readerStore.setReminder(false);
-    onDone();
-  };
-
-  return (
-    <>
-      <View style={[styles.bigIcon, { backgroundColor: theme.frameSoft }]}>
-        <Ionicons name="notifications" size={44} color={theme.frame} />
-        <View style={[styles.timeBadge, { backgroundColor: theme.frame }]}>
-          <Text style={[styles.timeText, { color: theme.paper }]}>{timeLabel}</Text>
-        </View>
-      </View>
-      <Heading
-        theme={theme}
-        kicker="DAILY REMINDER"
-        title="A gentle reminder to read"
-        text={`Get one notification every day at ${timeLabel}. It works offline, and you can change the time or turn it off with the bell on Home.`}
-      />
-      <PrimaryButton theme={theme} icon="notifications-outline" label="Turn on reminder" onPress={turnOn} disabled={busy} />
-      <Pressable
-        onPress={notNow}
-        disabled={busy}
-        accessibilityRole="button"
-        style={({ pressed }) => [styles.secondary, { borderColor: theme.frame, opacity: pressed ? 0.7 : 1 }]}
-      >
-        <Text style={[styles.secondaryText, { color: theme.frame }]}>Not now</Text>
-      </Pressable>
-    </>
-  );
-}
-
-function PrimaryButton({
-  theme, icon, label, onPress, disabled,
-}: {
-  theme: Theme; icon: IconName; label: string; onPress: () => void; disabled?: boolean;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      accessibilityRole="button"
-      style={({ pressed }) => [
-        styles.primary,
-        styles.primaryWide,
-        { backgroundColor: theme.frame, opacity: disabled ? 0.6 : pressed ? 0.85 : 1 },
-      ]}
-    >
-      <Ionicons name={icon} size={18} color={theme.paper} />
-      <Text style={[styles.primaryText, { color: theme.paper }]}>{label}</Text>
-    </Pressable>
   );
 }
 
@@ -383,14 +305,16 @@ const styles = StyleSheet.create({
   miniPage: { width: '86%', maxWidth: 320, borderWidth: 2, borderRadius: 18, padding: 3 },
   miniInner: { borderWidth: 1, borderRadius: 15, paddingVertical: 10, paddingHorizontal: 12, gap: 2, alignItems: 'center' },
   miniHeader: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, marginBottom: 4 },
-  miniHeaderText: { fontFamily: QURAN_FONT, fontSize: 15, lineHeight: 28 },
+  // Not Quran text: the phone's Arabic font (the Quran font is used only for Quran text).
+  miniHeaderText: { fontSize: 13, fontWeight: '700', lineHeight: 26 },
   miniLine: { justifyContent: 'center', columnGap: 6, height: 34, alignItems: 'center' },
   miniWord: { fontFamily: QURAN_FONT, fontSize: 17, lineHeight: 34 },
 
   themeRow: { flexDirection: 'row', gap: 10, alignSelf: 'stretch', justifyContent: 'center' },
   themeCard: { flex: 1, maxWidth: 130, borderRadius: 18, borderWidth: 2.5, padding: 8, gap: 8 },
   themePage: { borderWidth: 1.5, borderRadius: 12, padding: 8, gap: 7, alignItems: 'center', minHeight: 170 },
-  themeArabic: { fontFamily: QURAN_FONT, fontSize: 16, lineHeight: 30 },
+  // Decorative label, not Quran text: the phone's Arabic font.
+  themeArabic: { fontSize: 13, fontWeight: '700', lineHeight: 26 },
   themeBar: { height: 5, borderRadius: 3 },
   themeLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
   themeLabel: { fontSize: 14, fontWeight: '800' },
@@ -401,25 +325,14 @@ const styles = StyleSheet.create({
   placeSub: { fontSize: 13, opacity: 0.9 },
   placeGo: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
 
-  bigIcon: { width: 120, height: 120, borderRadius: 60, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  timeBadge: { position: 'absolute', bottom: -6, paddingHorizontal: 10, height: 26, borderRadius: 13, justifyContent: 'center' },
-  timeText: { fontSize: 13, fontWeight: '800' },
-
   footer: { paddingHorizontal: 24, paddingTop: 8, gap: 14, alignItems: 'center' },
   dots: { flexDirection: 'row', gap: 6, alignItems: 'center' },
   dot: { width: 8, height: 8, borderRadius: 4 },
   dotActive: { width: 22 },
   dotIdle: { opacity: 0.35 },
-  primarySpace: { height: 52 },
   primary: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     height: 52, borderRadius: 26, alignSelf: 'stretch', maxWidth: 440, width: '100%', marginHorizontal: 'auto',
   },
-  primaryWide: { marginTop: 4 },
   primaryText: { fontSize: 16, fontWeight: '800' },
-  secondary: {
-    height: 48, borderRadius: 24, borderWidth: 1.5, alignSelf: 'stretch', maxWidth: 440, width: '100%',
-    marginHorizontal: 'auto', alignItems: 'center', justifyContent: 'center', marginTop: -6,
-  },
-  secondaryText: { fontSize: 15, fontWeight: '700' },
 });

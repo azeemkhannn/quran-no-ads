@@ -6,6 +6,7 @@ import Constants from 'expo-constants';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { verifyQuranData } from '@/data/pages';
+import { RATE_SUPPORTED, openStorePage } from '@/review/review';
 import { useReaderStore } from '@/store/reader-store';
 import { THEMES, type Theme } from '@/theme';
 
@@ -103,7 +104,7 @@ export function AboutScreen() {
         </View>
 
         <Section theme={theme} icon="book-outline" title="This mushaf">
-          <Item theme={theme} label="Script" value="IndoPak (Nastaleeq), as printed in South Asia" />
+          <Item theme={theme} label="Script" value="IndoPak (QuranWBW v5.4, Hanafi), as printed in South Asia" />
           <Item theme={theme} label="Layout" value="13 lines per page, Taj Company print, 847 pages" />
           <Item theme={theme} label="Riwayah" value="Hafs ʿan ʿĀṣim" />
           <Item theme={theme} label="Contents" value="114 surahs · 30 paras · 6,236 ayahs" />
@@ -113,28 +114,38 @@ export function AboutScreen() {
         <Section theme={theme} icon="library-outline" title="Sources">
           <Source
             theme={theme}
-            title="Quran text"
-            text="IndoPak Nastaleeq script, word by word, from the Quranic Universal Library (QUL) by Tarteel."
+            title="Quran text and font"
+            text="IndoPak Quran text v5.4 (Hanafi) and the AlQuranNeo font by QuranWBW.com (Ayman Siddiqui & R. Siddiqua), used with prior written permission from QuranWBW, unmodified, and only for displaying the Quran text. Made as Sadaqa-e-Jaria."
+          />
+          <Source
+            theme={theme}
+            title="Copyright holders"
+            text="© Ayman Siddiqui · © Al-Qalam and Ghandhara Software · © King Fahd Glorious Quran Printing Complex (KFGQPC). All rights remain with their respective owners."
+          />
+          <Source
+            theme={theme}
+            title="Text sources & font development"
+            text="Text: KFGQPC, TypeMyBook.com (Ata Rafi), InPage Quran publishing resources. Font: Ayman Siddiqui & R. Siddiqua, the Al-Qalam font project, Ghandhara Software, KFGQPC (ayah numbers)."
+          />
+          <Source
+            theme={theme}
+            title="Verification of the text"
+            text="Hafiz Muhammad Zain Viqar (Content Lead, Deen App) and his team of huffaz: Hafiz Muavia bin Muhammad Haneef, Hafiz Ali Ahmed bin Aftab Ahmed, Hafiz Abdul Rehman bin Ramzan."
+          />
+          <Source
+            theme={theme}
+            title="Special thanks"
+            text="Abdul Majeed Khan, Arif Karim, Shakir-ul-Qadree and Jawad (Al Qalam Quran Majeed font), and everyone who helped digitise, verify and preserve the Quranic text."
           />
           <Source
             theme={theme}
             title="Page layout"
-            text="“Indopak 13 lines layout (Taj company)”, QUL. It places every word on its page and line exactly as in the printed mushaf."
+            text="“Indopak 13 lines layout (Taj company)” from the Quranic Universal Library (QUL) by Tarteel. It places every word on its page and line exactly as in the printed mushaf."
           />
           <Source
             theme={theme}
             title="Surah names & para divisions"
             text="QUL Quran metadata. The para names are the traditional IndoPak names (الٓمّٓ, سَيَقُوْلُ …)."
-          />
-          <Source
-            theme={theme}
-            title="Font"
-            text="“AlQuran IndoPak by QuranWBW”, made by Ayman Siddiqui for QuranWBW.com, based on the Al Qalam Quran Majeed fonts; ayah numbers from the KFGQPC Nastaleeq font. Obtained from QUL (Hanafi, with waqf lazim). Credits in the font: Al Qalam, Ghandhara, KFGQPC, Ayman Siddiqui, Abdul Majeed Khan, Arif Karim, Shakir-ul-Qadree, Jawad."
-          />
-          <Source
-            theme={theme}
-            title="Technical note"
-            text="No word of the text is changed. The font has one added character-map entry (U+202F mapped to its own space glyph) so that waqf signs render correctly on Android; no glyph is added or edited."
           />
         </Section>
 
@@ -160,6 +171,18 @@ export function AboutScreen() {
             <Text style={[styles.reportText, { color: theme.frame }]}>Email a correction</Text>
           </Pressable>
         </Section>
+
+        {RATE_SUPPORTED && (
+          <Pressable
+            onPress={openStorePage}
+            accessibilityRole="button"
+            accessibilityLabel="Rate this app on Google Play"
+            style={({ pressed }) => [styles.reportBtnOutline, { borderColor: theme.frame, opacity: pressed ? 0.7 : 1 }]}
+          >
+            <Ionicons name="star-outline" size={17} color={theme.frame} />
+            <Text style={[styles.reportText, { color: theme.frame }]}>Rate this app</Text>
+          </Pressable>
+        )}
 
         <Pressable
           onPress={() => router.push({ pathname: '/welcome', params: { again: '1' } })}

@@ -8,13 +8,13 @@ Copyright © 2026 Azeem Ullah Khan and contributors, and is licensed under the
 
 | File | Owner | Terms |
 |---|---|---|
-| `assets/fonts/IndoPakNastaleeq.ttf` | "AlQuran IndoPak by QuranWBW" by Ayman Siddiqui / QuranWBW.com (based on Al Qalam fonts; ayah numbers from KFGQPC) | Used in this app with written permission from QuranWBW (25 Nov 2026), for displaying the Quran text only. **Not included in this repository**, at QuranWBW's request. |
-| `assets/data/quran.json` | Quran text, page layout and metadata from the [Quranic Universal Library](https://qul.tarteel.ai) by Tarteel (IndoPak text prepared for QuranWBW.com; layout follows the Taj Company 13-line mushaf) | Per-resource terms. Permission has been requested. |
+| `assets/fonts/AlQuranNeo5x3-Arabic.ttf` (not in this repository) | AlQuranNeo font, © Ayman Siddiqui / QuranWBW.com, with © Al-Qalam and Ghandhara Software and © KFGQPC | Used in this app with prior written permission from QuranWBW (25 Nov 2026), unmodified, for displaying the Quran text only. Not included in this repository, at QuranWBW's request. |
+| `assets/data/quran.json` | Quran text: QuranWBW IndoPak v5.4 (Hanafi), by Ayman Siddiqui & R. Siddiqua, used unmodified with prior written permission from QuranWBW. Page layout and metadata: [Quranic Universal Library](https://qul.tarteel.ai) by Tarteel (layout follows the Taj Company 13-line mushaf) | Text: permission granted. Layout and metadata: permission requested. |
 | `assets/images/developer.jpg` | Azeem Ullah Khan | Not licensed for reuse. |
 
 Details and the status of each permission request are in [docs/LICENSES.md](docs/LICENSES.md).
 
 If you fork this project, you may use the code under the GPL, but you must get your own permission for the font,
-the Quran data and the developer photo, or replace them.
+the Quran text and layout data and the developer photo, or replace them.
 
 The app's code libraries (Expo, React Native and others) are MIT-licensed by their authors.

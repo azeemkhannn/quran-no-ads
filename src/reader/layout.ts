@@ -12,19 +12,6 @@ export const MIN_WORD_GAP_EM = 0.18;
  */
 const BASE_LINE_RANK = 40;
 const FONT_BOOST = 1.05;
-/**
- * Words ending in a Quranic annotation sign (waqf marks such as ۚ ۙ ؕ ۪, U+0615 and U+06D6–U+06ED).
- * The font draws these signs up to 0.6 em to the left of the word's box (measured with canvas ink
- * bounds). iOS and web draw outside the box, but Android clips text to its box, so the sign would
- * vanish. These words therefore get SIGN_PAD_EM of padding on their left, inside the box.
- */
-// iOS only (Android/web use joiner spaces, see pages.ts): marks standing after a space ("word ۪"), or
-// a waqf/annotation sign attached at the end ("عَاصِمٍۚ"). Ordinary letter marks at the end of a word
-// (e.g. small madda U+06E4) don't count.
-export const TRAILING_SIGN =
-  /(?: [ؐ-ًؚ-ٟۖ-ۭ]+|[ؔؕؗۖ-۪ۜ-۬][ً-ٟۖ-ۭ]*)$/;
-export const SIGN_PAD_EM = 0.65;
-
 /** Max glyph size relative to the line slot height (Nastaleeq has tall ascenders/descenders). */
 const FONT_TO_LINE_HEIGHT = 0.6;
 
@@ -34,8 +21,8 @@ export const PAGE_BOTTOM_GAP = 8; // space below the frame (room for the bottom 
 export const FRAME_OUTER_BORDER = 2;
 export const FRAME_GAP = 2; // space between the outer and inner border
 export const FRAME_INNER_BORDER = 1;
-/** Padding inside the inner border: room for Nastaleeq swashes and the rounded corners. */
-export const FRAME_PAD_H = 5;
+/** Padding inside the inner border: the left/right margin around the text (and room for swashes). */
+export const FRAME_PAD_H = 12;
 export const FRAME_PAD_V = 8;
 export const FRAME_RADIUS = 18;
 const FRAME_H = FRAME_OUTER_BORDER + FRAME_GAP + FRAME_INNER_BORDER + FRAME_PAD_H;
@@ -58,7 +45,7 @@ export type PageLayout = {
  * @param widths natural widths of the widest candidate lines at MEASURE_FONT_SIZE, keyed by "page:line"
  */
 export function computeLayout(width: number, height: number, widths: Record<string, number>): PageLayout {
-  const sidePad = Math.max(4, Math.round(width * 0.01));
+  const sidePad = Math.max(6, Math.round(width * 0.02));
   const innerW = width - sidePad * 2 - FRAME_H * 2;
   const innerH = height - PAGE_HEADER_H - PAGE_BOTTOM_GAP - FRAME_V * 2;
   const lineHeight = Math.floor(innerH / LINES_PER_PAGE);

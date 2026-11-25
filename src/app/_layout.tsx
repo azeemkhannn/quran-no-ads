@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
 import { Stack } from 'expo-router/stack';
 import { useFonts } from 'expo-font';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { AppLoading } from '@/loading/AppLoading';
 import { QURAN_FONT } from '@/reader/MushafPage';
 import { initReminder } from '@/reminder/reminder';
 import { useReaderStore } from '@/store/reader-store';
@@ -10,7 +10,7 @@ import { THEMES } from '@/theme';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    [QURAN_FONT]: require('../../assets/fonts/IndoPakNastaleeq.ttf'),
+    [QURAN_FONT]: require('../../assets/fonts/AlQuranNeo5x3-Arabic.ttf'),
     ...Ionicons.font,
   });
   const theme = THEMES[useReaderStore((s) => s.theme)];
@@ -21,13 +21,8 @@ export default function RootLayout() {
     if (fontsLoaded) initReminder();
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.bg }}>
-        <ActivityIndicator color={theme.frame} />
-      </View>
-    );
-  }
+  // Continues the splash screen with a small animation until the Quran font is ready.
+  if (!fontsLoaded) return <AppLoading />;
 
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.bg } }}>

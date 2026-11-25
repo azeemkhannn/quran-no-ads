@@ -10,7 +10,7 @@ import { storage } from '../store/storage';
 // text engine, so later launches skip the measuring entirely (it is the slowest step on low-end
 // phones). Bump MEASURE_VERSION whenever the font, the data or the word layout changes.
 // The home screen measures in the background on first launch, so the reader still opens instantly.
-const MEASURE_VERSION = 'v3';
+const MEASURE_VERSION = 'v4'; // v4: QuranWBW IndoPak v5.4 text and AlQuranNeo font
 const STORAGE_KEY = `lineWidths:${MEASURE_VERSION}`;
 
 function loadSaved(): Record<string, number> | null {

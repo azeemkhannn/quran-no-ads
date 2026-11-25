@@ -1,4 +1,5 @@
-// Page data access over the bundled QUL export (assets/data/quran.json, built by scripts/build_data.py).
+// Page data access over assets/data/quran.json: the QUL 13-line layout (scripts/build_data.py) with the
+// QuranWBW IndoPak v5.4 text (scripts/apply_quranwbw.py).
 //
 // quran.json format (compact arrays to keep the bundle small):
 //   lines:    [page, line, type(0 ayah | 1 surah_name | 2 basmallah), centered(0|1), surah, firstWordId, lastWordId][]
@@ -6,11 +7,9 @@
 //   wordLoc:  number[]   surah*1e6 + ayah*1e3 + position, index = wordId - 1
 //   surahs:   [nameArabic, nameSimple, ayahCount, revelationPlace, startPage][]   index = surah - 1
 //   juz:      [surah, ayah, startPage, firstWordText][]                          index = juz - 1
-import { Platform } from 'react-native';
 import raw from '../../assets/data/quran.json';
-import { TRAILING_SIGN } from '../reader/layout';
 
-/** One word unit on a line (a word, plus its waqf signs and ayah-end circle when they follow it). */
+/** One unit on a line: a word (with its waqf signs) or an ayah-number marker. */
 export type Word = { text: string; s: number; a: number; p: number; end: boolean };
 export type LineType = 'ayah' | 'surah_name' | 'basmallah';
 export type Line = { line: number; type: LineType; centered: boolean; surah: number | null; words: Word[] };
@@ -49,71 +48,26 @@ data.lines.forEach((l, i) => {
 });
 pageStart[TOTAL_PAGES + 1] = data.lines.length;
 
-// Ayah-end markers start with a combining mark (or a private-use glyph of the font). Shaped on
-// their own they lose their anchor and float, so they join the previous word's text run.
-const ATTACHES_TO_PREVIOUS = /^[ؐ-ًؚ-ٰٟۖ-ۭ-]/;
-
 /**
- * Android (and web, its preview): every space INSIDE a word unit is written as U+202F instead of
- * U+0020. In this font, waqf signs (ۚ, stacks like ۛۖۚ) and ayah circles are positioned by rules
- * that need the `space` glyph right before them in the same Arabic run. Android's text engine splits
- * text after every U+0020 before shaping (so signs lost their position, piled up or vanished) and
- * could wrap the part after the space onto a hidden line. scripts/patch_font.py maps U+202F to the
- * very same `space` glyph; Android does not split or wrap at U+202F and it stays in the Arabic run,
- * so the font renders every word exactly as designed. Verified on an Android 16 emulator.
- *
- * iOS shapes the original text correctly, so it keeps U+0020.
+ * The text is QuranWBW's IndoPak v5.4, shown exactly as published: QuranWBW gave permission to use the
+ * font and text only WITHOUT any modification. v5.4 was made for React Native: waqf signs and ayah
+ * markers are single glyphs of the AlQuranNeo font attached to their word, so Android and iOS render
+ * them correctly with no tricks. Each word and each ayah marker is drawn as its own unit.
  */
-const USE_JOINER_SPACE = Platform.OS !== 'ios';
-export const JOINER_SPACE = ' ';
-const WORD_SPACE = USE_JOINER_SPACE ? JOINER_SPACE : ' ';
-// Waqf sign attached to the word with no space ("عَاصِمٍۚ"): Android clips it at the word's edge, so
-// it gets a joiner space in front, which places it like every other waqf sign.
-const WORD_WITH_SIGN =
-  /^([\s\S]*?[^ؔؕؗۖ-۪ۜ-۬ ])([ؔؕؗۖ-۪ۜ-۬][ؐ-ًؚ-ٰٟۖ-ۭ]*)$/;
-
-// A unit that ENDS with waqf signs gets one more joiner space after them: the signs' ink reaches past
-// the end of the word's advance, and Android then shifts the whole word and clips its start.
-const ENDS_WITH_SIGNS = / [ؐ-ًؚ-ٰٟۖ-ۭ]+$/;
-
-function finish(t: string): string {
-  return ENDS_WITH_SIGNS.test(t) ? t + JOINER_SPACE : t;
-}
-
-function forPlatform(raw: string): string {
-  if (!USE_JOINER_SPACE) return raw;
-  const t = raw.replace(/ /g, JOINER_SPACE);
-  const m = WORD_WITH_SIGN.exec(t);
-  return finish(m ? m[1] + JOINER_SPACE + m[2] : t);
-}
-
 function wordAt(id: number): Word {
   const loc = data.wordLoc[id - 1];
   const s = Math.floor(loc / 1_000_000);
   const a = Math.floor((loc % 1_000_000) / 1000);
   const p = loc % 1000;
-  // The end marker is the last "word" of an ayah: the next word id starts a new ayah.
+  // The ayah marker is the last entry of an ayah: the next word id starts a new ayah.
   const next = data.wordLoc[id];
   const end = next === undefined || Math.floor(next / 1000) !== Math.floor(loc / 1000);
-  return { text: forPlatform(data.wordText[id - 1]), s, a, p, end };
+  return { text: data.wordText[id - 1], s, a, p, end };
 }
 
 function lineWords(first: number, last: number): Word[] {
   const out: Word[] = [];
-  for (let id = first; id <= last; id++) {
-    const w = wordAt(id);
-    const prev = out[out.length - 1];
-    if (prev && (w.end || ATTACHES_TO_PREVIOUS.test(data.wordText[id - 1]))) {
-      // Ayah-end marker (or a piece that starts with a mark/glyph) joins the previous word, with the
-      // space the font expects between them.
-      const joined = USE_JOINER_SPACE
-        ? finish(prev.text.replace(/ +$/, '') + JOINER_SPACE + w.text.replace(/ +$/, ''))
-        : prev.text + WORD_SPACE + w.text;
-      out[out.length - 1] = { ...prev, text: joined, end: true };
-    } else {
-      out.push(w);
-    }
-  }
+  for (let id = first; id <= last; id++) out.push(wordAt(id));
   return out;
 }
 
@@ -205,8 +159,8 @@ export function widestLineCandidates(count = 500): LineCandidate[] {
       .map((w) => w.text)
       .join('')
       .replace(/[ؐ-ًؚ-ٰٟۖ-ۭ\s]/g, '').length;
-    // Words with a waqf sign take extra room (~1.3 base letters wide).
-    const signs = words.filter((w) => TRAILING_SIGN.test(w.text) || w.text.includes(JOINER_SPACE)).length;
+    // Waqf signs and ayah markers are private-use glyphs of the font; they take extra room.
+    const signs = words.filter((w) => /[-]/.test(w.text)).length;
     scored.push({ key: lineKey(page, line), words, score: base + words.length * 0.5 + signs * 1.3 });
   }
   scored.sort((x, y) => y.score - x.score);

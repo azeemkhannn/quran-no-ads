@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 import { useKeepAwake } from 'expo-keep-awake';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PAGE_NUMBERS, TOTAL_PAGES, getPage } from '@/data/pages';
+import { AppLoading } from '@/loading/AppLoading';
+import { noteReadingSession } from '@/review/review';
 import { readerStore, useReaderStore } from '@/store/reader-store';
 import { THEMES, THEME_ORDER, type Theme } from '@/theme';
 import { computeLayout } from './layout';
@@ -54,6 +56,9 @@ export function ReaderScreen() {
   // timer). Leaving the reader, or closing the app, lets the phone sleep normally again.
   useKeepAwake('reader', { suppressDeactivateWarnings: true });
   const pagerRef = useRef<PagerHandle>(null);
+  // Pages seen in this session; on leaving, a real reading counts toward the rating pop-up.
+  const seenPages = useRef(new Set([index]));
+  useEffect(() => () => noteReadingSession(seenPages.current.size), []);
   // Latest page index, for callbacks (refs can't be read during render).
   const indexRef = useRef(index);
   useEffect(() => {
@@ -72,6 +77,7 @@ export function ReaderScreen() {
 
   /** Shows page i and saves it (as the Continue reading place, or as a Recently read entry). */
   const changeIndex = useCallback((i: number) => {
+    seenPages.current.add(i);
     setIndex(i);
     if (tracks.current) readerStore.setLastPage(i + 1);
     else readerStore.recordRecent(i + 1);
@@ -148,9 +154,8 @@ export function ReaderScreen() {
             viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
           />
         ) : (
-          <View style={styles.center}>
-            <ActivityIndicator color={theme.frame} />
-          </View>
+          // First open only: the line widths are measured once, then saved on the phone.
+          <AppLoading label="Preparing pages" colors={{ bg: theme.bg, accent: theme.frame, text: theme.muted }} />
         )}
       </View>
 
@@ -299,7 +304,6 @@ function RoundButton({
 const styles = StyleSheet.create({
   root: { flex: 1 },
   pages: { flex: 1 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   status: { height: STATUS_H, justifyContent: 'center', paddingHorizontal: 12 },
   tempChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'center', maxWidth: '100%',

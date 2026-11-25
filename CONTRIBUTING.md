@@ -37,7 +37,8 @@ npx expo start        # press a = Android, i = iOS, w = web, or scan the QR code
 
 The Quran data (`assets/data/quran.json`) is in the repo. **The Quran font is not:** QuranWBW allows its
 use in this app but asked that it is not shared on public repositories. To run the app, ask QuranWBW
-(quranwbw.com) for the IndoPak font yourself and place it at `assets/fonts/IndoPakNastaleeq.ttf`. Please don't
+(quranwbw.com) for the IndoPak v5.4 AlQuranNeo font yourself and place it at
+`assets/fonts/AlQuranNeo5x3-Arabic.ttf`. Please don't
 commit it; the folder is in `.gitignore`.
 
 ## Before you open a pull request
@@ -65,7 +66,7 @@ src/reader/         the mushaf page: layout maths, line fitting, word rendering,
 src/about/          About & sources page, with on-device verification of the Quran data
 src/data/           page and word data access, integrity checks, para names
 src/store/          saved state (reading place, bookmarks, theme, recents), stored on the device only
-scripts/            build_data.py (QUL data → quran.json, with validation), patch_font.py
+scripts/            build_data.py (QUL layout → quran.json), apply_quranwbw.py (QuranWBW v5.4 text → quran.json)
 docs/               licences, plan, screenshots
 ```
 
@@ -74,13 +75,11 @@ docs/               licences, plan, screenshots
 These cost a lot of time to get right, so please read them before touching `src/data/pages.ts`,
 `src/reader/WordUnit.tsx` or the font:
 
-- In this font, **waqf signs and ayah circles are positioned by rules that need the font's `space` glyph
-  right before them**, in the same Arabic run.
-- **Android splits text at every normal space** before shaping, and it can wrap the part after the space
-  onto a hidden line. That made signs vanish, pile up, or cut off the start of words.
-- The fix: `scripts/patch_font.py` maps **U+202F** to the font's `space` glyph. On Android and web, the
-  spaces inside a word unit are written as U+202F, plus one after trailing signs. iOS keeps the original
-  text.
+- **Never modify the Quran text or the font.** QuranWBW's permission requires both to be used exactly as
+  published (IndoPak v5.4 and the AlQuranNeo font), and the font only for Quran text. Surah names and any
+  other Arabic UI text must use the phone's normal font.
+- v5.4 is designed for React Native: waqf signs and ayah markers are single glyphs attached to their word, so
+  Android and iOS render them without tricks. Each word and each ayah marker is drawn as its own unit.
 - If you change the font, the data or the word layout, bump `MEASURE_VERSION` in
   `src/reader/LineMeasurer.tsx`, so phones measure the lines again.
 - Every page must keep exactly its 13 lines, justified, with no overflow. Check several pages (for example

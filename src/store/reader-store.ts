@@ -72,7 +72,7 @@ function loadList<T extends { page: number }>(key: string): T[] {
 function loadWelcomed(): boolean {
   if (storage.get(KEYS.welcomed) === '1') return true;
   // Not the theme: it can be picked on the welcome screens themselves.
-  const existingUser = [KEYS.lastPage, KEYS.bookmarks, KEYS.recents, KEYS.reminder, 'lineWidths:v3'].some(
+  const existingUser = [KEYS.lastPage, KEYS.bookmarks, KEYS.recents, KEYS.reminder, 'lineWidths:v3', 'lineWidths:v4'].some(
     (k) => storage.get(k) !== null,
   );
   if (existingUser) storage.set(KEYS.welcomed, '1');
