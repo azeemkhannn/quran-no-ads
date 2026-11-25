@@ -8,7 +8,7 @@ Copyright © 2026 Azeem Ullah Khan and contributors, and is licensed under the
 
 | File | Owner | Terms |
 |---|---|---|
-| `assets/fonts/IndoPakNastaleeq.ttf` | "AlQuran IndoPak by QuranWBW" by Ayman Siddiqui / QuranWBW.com (based on Al Qalam fonts; ayah numbers from KFGQPC) | Not for sale, modification or distribution without written notice from QuranWBW.com. Permission has been requested. |
+| `assets/fonts/IndoPakNastaleeq.ttf` | "AlQuran IndoPak by QuranWBW" by Ayman Siddiqui / QuranWBW.com (based on Al Qalam fonts; ayah numbers from KFGQPC) | Used in this app with written permission from QuranWBW (25 Nov 2026), for displaying the Quran text only. **Not included in this repository**, at QuranWBW's request. |
 | `assets/data/quran.json` | Quran text, page layout and metadata from the [Quranic Universal Library](https://qul.tarteel.ai) by Tarteel (IndoPak text prepared for QuranWBW.com; layout follows the Taj Company 13-line mushaf) | Per-resource terms. Permission has been requested. |
 | `assets/images/developer.jpg` | Azeem Ullah Khan | Not licensed for reuse. |
 

@@ -35,8 +35,10 @@ npm install
 npx expo start        # press a = Android, i = iOS, w = web, or scan the QR code with Expo Go
 ```
 
-The Quran data (`assets/data/quran.json`) and the font are already in the repo, so nothing else needs to be
-downloaded.
+The Quran data (`assets/data/quran.json`) is in the repo. **The Quran font is not:** QuranWBW allows its
+use in this app but asked that it is not shared on public repositories. To run the app, ask QuranWBW
+(quranwbw.com) for the IndoPak font yourself and place it at `assets/fonts/IndoPakNastaleeq.ttf`. Please don't
+commit it; the folder is in `.gitignore`.
 
 ## Before you open a pull request
 

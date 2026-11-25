@@ -49,3 +49,7 @@ docs/play-store/
 
 # Signing keys (never commit)
 *.keystore
+
+# Quran font: used in the app with QuranWBW's permission, but they asked that it is not shared on public
+# repositories. Keep it local only (see NOTICE.md and CONTRIBUTING.md).
+assets/fonts/
