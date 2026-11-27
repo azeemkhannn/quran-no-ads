@@ -3,6 +3,7 @@ import { Stack } from 'expo-router/stack';
 import { useFonts } from 'expo-font';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppLoading } from '@/loading/AppLoading';
+import { SetupMeasurer } from '@/reader/LineMeasurer';
 import { QURAN_FONT } from '@/reader/MushafPage';
 import { initReminder } from '@/reminder/reminder';
 import { useReaderStore } from '@/store/reader-store';
@@ -25,6 +26,10 @@ export default function RootLayout() {
   if (!fontsLoaded) return <AppLoading />;
 
   return (
+    <>
+    {/* New install: measures the Quran lines for this phone in small steps, starting while the
+        welcome screens show (see LineMeasurer). Renders nothing once done. */}
+    <SetupMeasurer />
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.bg } }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="read" options={{ animation: 'slide_from_right' }} />
@@ -32,5 +37,6 @@ export default function RootLayout() {
       {/* First launch only; no swipe-back, the screens end with their own buttons. */}
       <Stack.Screen name="welcome" options={{ animation: 'fade', gestureEnabled: false }} />
     </Stack>
+    </>
   );
 }

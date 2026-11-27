@@ -7,7 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { JUZ, SURAHS, TOTAL_PAGES, getPage, surahAtPage, type SurahInfo } from '@/data/pages';
 import { PARA_NAMES } from '@/data/meta';
 import { readerStore, useReaderStore, type Bookmark, type ReadingMode } from '@/store/reader-store';
-import { BackgroundMeasurer } from '@/reader/LineMeasurer';
+import { AppLoading } from '@/loading/AppLoading';
+import { useMeasureProgress, useMeasuredWidths } from '@/reader/LineMeasurer';
 import { REMINDER_SUPPORTED, formatTime } from '@/reminder/reminder';
 import { ReminderSheet } from '@/reminder/ReminderSheet';
 import { THEMES, THEME_ORDER, type Theme, type ThemeName } from '@/theme';
@@ -105,8 +106,6 @@ export function HomeScreen() {
   return (
     <View style={[styles.root, { backgroundColor: theme.bg, paddingTop: insets.top }]}>
       <StatusBar style={theme.statusBar} />
-      {/* Prepares the reader's font size while you browse, so pages open instantly. */}
-      <BackgroundMeasurer />
       <FlatList
         data={items}
         keyExtractor={itemKey}
@@ -124,6 +123,22 @@ export function HomeScreen() {
         windowSize={9}
         contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
       />
+      <SetupOverlay />
+    </View>
+  );
+}
+
+/**
+ * New install only: if the one-time setup (measuring the Quran lines for this phone) is still
+ * running when Home opens, a loading screen with its progress covers Home until it is done.
+ */
+function SetupOverlay() {
+  const ready = !!useMeasuredWidths();
+  const progress = useMeasureProgress();
+  if (ready) return null;
+  return (
+    <View style={StyleSheet.absoluteFill}>
+      <AppLoading label="Setting up the app" note={'Please wait, this happens only once.'} progress={progress} />
     </View>
   );
 }
@@ -179,7 +194,7 @@ function HomeHeader({
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
           <Text style={[styles.appArabic, { color: theme.frame }]}>القرآن الكريم</Text>
-          <Text style={[styles.title, { color: theme.ink }]}>Quran No Ads</Text>
+          <Text style={[styles.title, { color: theme.ink }]} numberOfLines={2}>Al Quran</Text>
           <Text style={[styles.tagline, { color: theme.muted }]}>IndoPak 13-line mushaf · offline · free</Text>
         </View>
         {REMINDER_SUPPORTED && <ReminderButton theme={theme} on={reminder === true} />}

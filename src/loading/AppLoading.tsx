@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
 
 /** Same colour and image as the native splash screen (app.json), so the hand-over is seamless. */
-const SPLASH_BG = '#013219';
+const SPLASH_BG = '#02340E';
 const GOLD = '#D8B45A';
 const ICON_W = 220;
 const BAR_W = 140;
@@ -15,7 +15,16 @@ type Colors = { bg: string; accent: string; text: string };
  * background and icon, which then gently breathes, with a moving bar below), and, with the theme's
  * colours, while the reader prepares its pages the first time.
  */
-export function AppLoading({ label = 'Preparing the mushaf', colors }: { label?: string; colors?: Partial<Colors> }) {
+export function AppLoading({
+  label = 'Preparing the mushaf', note, progress, colors,
+}: {
+  label?: string;
+  /** Smaller second line, e.g. "This happens only once". */
+  note?: string;
+  /** 0..1 shows a filling bar instead of the moving one. */
+  progress?: number;
+  colors?: Partial<Colors>;
+}) {
   const c: Colors = { bg: SPLASH_BG, accent: GOLD, text: 'rgba(255,255,255,0.75)', ...colors };
   const [breathe] = useState(() => new Animated.Value(0));
   const [slide] = useState(() => new Animated.Value(0));
@@ -55,9 +64,16 @@ export function AppLoading({ label = 'Preparing the mushaf', colors }: { label?:
       )}
       <Animated.View style={[styles.below, colors ? null : styles.belowIcon, { opacity: colors ? 1 : fadeIn }]}>
         <View style={[styles.track, { backgroundColor: c.accent + '33' }]}>
-          <Animated.View style={[styles.slider, { backgroundColor: c.accent, transform: [{ translateX }] }]} />
+          {progress === undefined ? (
+            <Animated.View style={[styles.slider, { backgroundColor: c.accent, transform: [{ translateX }] }]} />
+          ) : (
+            <View style={[styles.fill, { backgroundColor: c.accent, width: `${Math.max(4, Math.round(progress * 100))}%` }]} />
+          )}
         </View>
-        <Text style={[styles.label, { color: c.text }]}>{label}…</Text>
+        <Text style={[styles.label, { color: c.text }]}>
+          {label}…{progress === undefined ? '' : ` ${Math.round(progress * 100)}%`}
+        </Text>
+        {!!note && <Text style={[styles.note, { color: c.text }]}>{note}</Text>}
       </Animated.View>
     </View>
   );
@@ -71,5 +87,7 @@ const styles = StyleSheet.create({
   below: { alignItems: 'center', gap: 12 },
   track: { width: BAR_W, height: 4, borderRadius: 2, overflow: 'hidden' },
   slider: { width: SLIDER_W, height: 4, borderRadius: 2 },
-  label: { fontSize: 13, fontWeight: '600', letterSpacing: 0.3 },
+  fill: { height: 4, borderRadius: 2 },
+  note: { fontSize: 12, opacity: 0.8, textAlign: 'center', marginTop: -4 },
+  label: { fontSize: 14, fontWeight: '600', letterSpacing: 0.3 },
 });

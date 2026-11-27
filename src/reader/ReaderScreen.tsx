@@ -12,7 +12,7 @@ import { readerStore, useReaderStore } from '@/store/reader-store';
 import { THEMES, THEME_ORDER, type Theme } from '@/theme';
 import { computeLayout } from './layout';
 import { GoToPageDialog } from './GoToPageDialog';
-import { BackgroundMeasurer, getMeasuredWidths } from './LineMeasurer';
+import { useMeasureProgress, useMeasuredWidths } from './LineMeasurer';
 import { MushafPage } from './MushafPage';
 import { PagePager, type PagerHandle } from './PagePager';
 
@@ -43,7 +43,8 @@ export function ReaderScreen() {
     tracks.current = mode === 'continue';
   }, [mode]);
 
-  const [lineWidths, setLineWidths] = useState(getMeasuredWidths);
+  const lineWidths = useMeasuredWidths();
+  const setupProgress = useMeasureProgress();
   // Opens on the page chosen on Home (the Continue reading place, or a surah/para/bookmark).
   const [index, setIndex] = useState(() => readerStore.getState().session.startPage - 1);
   const [goToOpen, setGoToOpen] = useState(false);
@@ -110,7 +111,6 @@ export function ReaderScreen() {
   return (
     <View style={[styles.root, { backgroundColor: theme.bg, paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <StatusBar style={theme.statusBar} />
-      {!lineWidths && <BackgroundMeasurer onMeasured={setLineWidths} />}
 
       <View
         style={styles.pages}
@@ -155,7 +155,12 @@ export function ReaderScreen() {
           />
         ) : (
           // First open only: the line widths are measured once, then saved on the phone.
-          <AppLoading label="Preparing pages" colors={{ bg: theme.bg, accent: theme.frame, text: theme.muted }} />
+          <AppLoading
+            label="Preparing pages"
+            note={lineWidths ? undefined : 'Please wait, this happens only once.'}
+            progress={lineWidths ? undefined : setupProgress}
+            colors={{ bg: theme.bg, accent: theme.frame, text: theme.muted }}
+          />
         )}
       </View>
 

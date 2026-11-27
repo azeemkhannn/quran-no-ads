@@ -2,7 +2,7 @@
   "expo": {
     "name": "Al Quran",
     "slug": "quran-no-ads",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -18,14 +18,14 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#013219",
+        "backgroundColor": "#02340E",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.azeestudio.qurannoads",
-      "versionCode": 3,
+      "versionCode": 4,
       "playStoreUrl": "https://play.google.com/store/apps/details?id=com.azeestudio.qurannoads",
       "blockedPermissions": [
         "android.permission.INTERNET",
@@ -55,7 +55,7 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 220,
           "resizeMode": "contain",
-          "backgroundColor": "#013219"
+          "backgroundColor": "#02340E"
         }
       ],
       [

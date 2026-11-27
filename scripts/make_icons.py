@@ -15,7 +15,7 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont, ImageOps
 SRC = sys.argv[1] if len(sys.argv) > 1 else "assets/images/icon-source.webp"
 OUT = "assets/"
 SIZE = 1024
-SPLASH_BG = (1, 50, 25)  # the source's dark-green edge; also used in app.json
+SPLASH_BG = (2, 52, 14)  # the source's dark-green edge; also used in app.json
 ANDROID_SCALE = 0.70  # keeps the arch, title and book inside a circular launcher mask
 
 
@@ -122,8 +122,10 @@ def main() -> None:
     fg.save(OUT + "android-icon-foreground.png")
 
     # Android 13+ themed icon: the gold artwork (title, arch, book) as a white silhouette.
-    lum = ImageOps.grayscale(full)
-    alpha = lum.point(lambda v: max(0, min(255, (v - 95) * 255 // 70)))
+    # Built from the red channel: high only in the gold artwork, low in every green (even the
+    # bright glow behind the mosque), so the silhouette is just the gold lines and lettering.
+    red = full.getchannel("R")
+    alpha = red.point(lambda v: max(0, min(255, (v - 110) * 255 // 70)))
     mono = Image.new("RGBA", full.size, (255, 255, 255, 0))
     mono.putalpha(alpha)
     on_layer(mono, ANDROID_SCALE).save(OUT + "android-icon-monochrome.png")

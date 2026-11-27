@@ -142,7 +142,7 @@ function WelcomeSlide({ theme }: { theme: Theme }) {
     <>
       <Image source={require('../../assets/icon.png')} style={styles.appIcon} accessibilityIgnoresInvertColors />
       <Text style={[styles.salam, { color: theme.frame }]}>السلام علیکم</Text>
-      <Heading theme={theme} title="Welcome to Quran No Ads" />
+      <Heading theme={theme} title="Welcome to Al Quran" />
       <View style={styles.chips}>
         {(
           [

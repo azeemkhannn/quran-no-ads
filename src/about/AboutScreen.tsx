@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Alert, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 import Constants from 'expo-constants';
@@ -14,7 +14,7 @@ const DEVELOPER = { name: 'Azeem Ullah Khan', email: 'azeemkhannnn7@gmail.com' }
 
 /** Opens the phone's mail app with a mistake report addressed to the developer. */
 function reportMistake() {
-  const subject = encodeURIComponent('Quran No Ads – mistake report');
+  const subject = encodeURIComponent('Al Quran – mistake report');
   const body = encodeURIComponent('Page:\nLine:\nWhat is different from the printed mushaf:\n');
   Linking.openURL(`mailto:${DEVELOPER.email}?subject=${subject}&body=${body}`).catch(() => {
     Alert.alert('No email app found', `Please write to ${DEVELOPER.email} with the page and line number.`);
@@ -51,11 +51,6 @@ export function AboutScreen() {
         {/* Developer */}
         <View style={[styles.devCard, { backgroundColor: theme.paper, borderColor: theme.frameSoft }]}>
           <View style={styles.devHead}>
-            <Image
-              source={require('../../assets/images/developer.jpg')}
-              style={[styles.devPhoto, { borderColor: theme.frame }]}
-              accessibilityLabel={`Photo of ${DEVELOPER.name}`}
-            />
             <View style={{ flex: 1 }}>
               <Text style={[styles.devKicker, { color: theme.frame }]}>DEVELOPER</Text>
               <Text style={[styles.devName, { color: theme.ink }]}>{DEVELOPER.name}</Text>
@@ -194,7 +189,7 @@ export function AboutScreen() {
           <Text style={[styles.reportText, { color: theme.frame }]}>Show welcome again</Text>
         </Pressable>
 
-        <Text style={[styles.footer, { color: theme.muted }]}>Quran No Ads · version {version}</Text>
+        <Text style={[styles.footer, { color: theme.muted }]}>Al Quran · version {version}</Text>
       </ScrollView>
     </View>
   );
@@ -257,7 +252,6 @@ const styles = StyleSheet.create({
 
   devCard: { borderRadius: 22, borderWidth: 1, padding: 16, gap: 14 },
   devHead: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  devPhoto: { width: 72, height: 72, borderRadius: 36, borderWidth: 2 },
   devKicker: { fontSize: 11, fontWeight: '800', letterSpacing: 1.2 },
   devName: { fontSize: 19, fontWeight: '800', marginTop: 2 },
   devEmail: { fontSize: 13.5, marginTop: 2 },

@@ -42,7 +42,7 @@ export function ReminderSheet({ theme, onClose }: { theme: Theme; onClose: () =>
       if (result === 'blocked') {
         setBusy(false);
         onClose();
-        Alert.alert('Notifications are off', 'To get the daily reminder, allow notifications for Quran No Ads in your phone settings.', [
+        Alert.alert('Notifications are off', 'To get the daily reminder, allow notifications for Al Quran in your phone settings.', [
           { text: 'Not now', style: 'cancel' },
           { text: 'Open settings', onPress: () => Linking.openSettings() },
         ]);
