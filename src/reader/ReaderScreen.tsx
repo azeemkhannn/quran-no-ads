@@ -7,9 +7,10 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PAGE_NUMBERS, TOTAL_PAGES, getPage } from '@/data/pages';
 import { AppLoading } from '@/loading/AppLoading';
+import { ThemeButton } from '@/ui/ThemeButton';
 import { noteReadingSession } from '@/review/review';
 import { readerStore, useReaderStore } from '@/store/reader-store';
-import { THEMES, THEME_ORDER, type Theme } from '@/theme';
+import { THEMES, type Theme } from '@/theme';
 import { computeLayout } from './layout';
 import { GoToPageDialog } from './GoToPageDialog';
 import { useMeasureProgress, useMeasuredWidths } from './LineMeasurer';
@@ -105,8 +106,6 @@ export function ReaderScreen() {
     [changeIndex],
   );
 
-  const cycleTheme = () =>
-    readerStore.setTheme(THEME_ORDER[(THEME_ORDER.indexOf(themeName) + 1) % THEME_ORDER.length]);
 
   return (
     <View style={[styles.root, { backgroundColor: theme.bg, paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -213,7 +212,7 @@ export function ReaderScreen() {
           )}
         </View>
 
-        <RoundButton icon={theme.icon} label={`Theme: ${theme.label}. Tap to change`} onPress={cycleTheme} theme={theme} />
+        <ThemeButton theme={theme} />
       </View>
 
       <GoToPageDialog

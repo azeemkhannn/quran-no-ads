@@ -17,6 +17,8 @@ OUT = "assets/"
 SIZE = 1024
 SPLASH_BG = (2, 52, 14)  # the source's dark-green edge; also used in app.json
 ANDROID_SCALE = 0.70  # keeps the arch, title and book inside a circular launcher mask
+# Adaptive icons: launchers show only the centre 72dp of the 108dp layer, often as a circle.
+SAFE_RADIUS = SIZE / 2 * (72 / 108) * 0.95
 
 
 def corner_mask(im: Image.Image) -> Image.Image:
@@ -102,6 +104,70 @@ def notification_icon(mono: Image.Image, size: int = 96) -> Image.Image:
     return img
 
 
+def arch_mask(full: Image.Image) -> Image.Image:
+    """The gold arch and everything inside it (255).
+
+    Row by row, the arch spans from the leftmost to the rightmost gold pixel (gold: high red and
+    green, low blue; the pattern around it is green). The border fades out near the bottom, so
+    the straight sides are carried down and the shape is closed with rounded corners a little below
+    the last gold row, under the ornament line.
+    """
+    rgb = np.asarray(full, dtype=np.int32)
+    gold = (rgb[..., 0] > 140) & (rgb[..., 1] > 110) & (rgb[..., 2] < 120)
+    rows = np.nonzero(gold.any(1))[0]
+    top, last = rows[0], rows[-1]
+    h, w = gold.shape
+    bottom = min(h - 1, last + round(h * 0.12))
+    mask = np.zeros((h, w), dtype=np.uint8)
+    cols = np.nonzero(gold.any(0))[0]
+    left, right = cols[0], cols[-1]  # the arch's straight sides
+    span = None
+    for y in range(top, bottom + 1):
+        xs = np.nonzero(gold[y])[0]
+        if span == (left, right):
+            pass  # below the shoulders the sides are straight (and the border fades): keep them
+        elif len(xs):
+            span = (xs.min(), xs.max())
+            if span[0] <= left + 8 and span[1] >= right - 8:
+                span = (left, right)
+        if span:
+            mask[y, span[0]:span[1] + 1] = 255
+    # Round off the bottom corners.
+    radius = round(h * 0.09)
+    corners = Image.new("L", (w, h), 0)
+    ImageDraw.Draw(corners).rounded_rectangle((left, top - radius, right, bottom), radius=radius, fill=255)
+    mask = np.minimum(mask, np.asarray(corners))
+    return Image.fromarray(mask).filter(ImageFilter.GaussianBlur(1.5))
+
+
+def fit_in_circle(img: Image.Image, mask: Image.Image) -> Image.Image:
+    """Crops img (RGBA) to the mask and centres it on a layer so every masked pixel lies within
+    SAFE_RADIUS of the centre: nothing is cut off by a round (or any other) launcher shape."""
+    box = mask.point(lambda v: 255 if v > 128 else 0).getbbox()
+    a = np.asarray(mask.crop(box)) > 128
+    ys, xs = np.nonzero(a)
+    cx, cy = (a.shape[1] - 1) / 2, (a.shape[0] - 1) / 2
+    reach = np.sqrt((xs - cx) ** 2 + (ys - cy) ** 2).max()
+    scale = SAFE_RADIUS / reach
+    part = img.crop(box)
+    part.putalpha(ImageChops.multiply(part.getchannel("A"), mask.crop(box)))
+    w, h = round(part.width * scale), round(part.height * scale)
+    part = part.resize((w, h), Image.LANCZOS)
+    layer = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+    layer.alpha_composite(part, ((SIZE - w) // 2, (SIZE - h) // 2))
+    return layer
+
+
+def radial_background() -> Image.Image:
+    """Dark green, a little lighter in the middle, like the logo's own background."""
+    yy, xx = np.mgrid[0:SIZE, 0:SIZE]
+    d = np.clip(np.sqrt((xx - SIZE / 2) ** 2 + (yy - SIZE / 2) ** 2) / (SIZE / 2), 0, 1)
+    edge = np.array(SPLASH_BG, dtype=np.float32)
+    centre = np.array((6, 84, 30), dtype=np.float32)
+    rgb = centre + (edge - centre) * d[..., None] ** 1.2
+    return Image.fromarray(rgb.astype(np.uint8))
+
+
 def main() -> None:
     src = Image.open(SRC).convert("RGB")
     if src.width != src.height:
@@ -117,9 +183,11 @@ def main() -> None:
     ImageOps.grayscale(icon).convert("RGB").save(OUT + "ios-icon-tinted.png")
 
     # Android adaptive icon (108dp layers, only the centre 72dp is ever shown).
-    Image.new("RGB", (SIZE, SIZE), SPLASH_BG).save(OUT + "android-icon-background.png")
-    fg = on_layer(full.convert("RGBA"), ANDROID_SCALE, feather=10)
-    fg.save(OUT + "android-icon-foreground.png")
+    # The arch (with the mosque, title and ornament inside it) is cut out and sized to fit a circle,
+    # on a plain green background, so round, squircle and square launchers all show it whole.
+    arch = arch_mask(full)
+    radial_background().save(OUT + "android-icon-background.png")
+    fit_in_circle(full.convert("RGBA"), arch).save(OUT + "android-icon-foreground.png")
 
     # Android 13+ themed icon: the gold artwork (title, arch, book) as a white silhouette.
     # Built from the red channel: high only in the gold artwork, low in every green (even the
@@ -128,7 +196,7 @@ def main() -> None:
     alpha = red.point(lambda v: max(0, min(255, (v - 110) * 255 // 70)))
     mono = Image.new("RGBA", full.size, (255, 255, 255, 0))
     mono.putalpha(alpha)
-    on_layer(mono, ANDROID_SCALE).save(OUT + "android-icon-monochrome.png")
+    fit_in_circle(mono, arch).save(OUT + "android-icon-monochrome.png")
 
     # Splash: the original rounded tile with its corners made transparent.
     tile = src.convert("RGBA")

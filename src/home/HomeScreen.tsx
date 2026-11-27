@@ -11,7 +11,8 @@ import { AppLoading } from '@/loading/AppLoading';
 import { useMeasureProgress, useMeasuredWidths } from '@/reader/LineMeasurer';
 import { REMINDER_SUPPORTED, formatTime } from '@/reminder/reminder';
 import { ReminderSheet } from '@/reminder/ReminderSheet';
-import { THEMES, THEME_ORDER, type Theme, type ThemeName } from '@/theme';
+import { ThemeButton } from '@/ui/ThemeButton';
+import { THEMES, type Theme } from '@/theme';
 
 type Tab = 'surahs' | 'paras' | 'bookmarks';
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -112,7 +113,7 @@ export function HomeScreen() {
         renderItem={renderItem}
         extraData={theme}
         ListHeaderComponent={
-          <HomeHeader theme={theme} themeName={themeName} lastPage={lastPage} reminder={reminder} />
+          <HomeHeader theme={theme} lastPage={lastPage} reminder={reminder} />
         }
         // Index 0 is the header above; index 1 is the tabs + search bar, pinned while the list scrolls.
         stickyHeaderIndices={[1]}
@@ -179,15 +180,14 @@ function ReminderButton({ theme, on }: { theme: Theme; on: boolean }) {
 }
 
 function HomeHeader({
-  theme, themeName, lastPage, reminder,
+  theme, lastPage, reminder,
 }: {
-  theme: Theme; themeName: ThemeName; lastPage: number; reminder: boolean | null;
+  theme: Theme; lastPage: number; reminder: boolean | null;
 }) {
   const current = getPage(lastPage);
   const surah = surahAtPage(lastPage);
   const started = lastPage > 1;
   const progress = lastPage / TOTAL_PAGES;
-  const cycleTheme = () => readerStore.setTheme(THEME_ORDER[(THEME_ORDER.indexOf(themeName) + 1) % THEME_ORDER.length]);
 
   return (
     <View style={styles.headerBlock}>
@@ -198,15 +198,7 @@ function HomeHeader({
           <Text style={[styles.tagline, { color: theme.muted }]}>IndoPak 13-line mushaf · offline · free</Text>
         </View>
         {REMINDER_SUPPORTED && <ReminderButton theme={theme} on={reminder === true} />}
-        <Pressable
-          onPress={cycleTheme}
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel={`Theme: ${theme.label}. Tap to change`}
-          style={({ pressed }) => [styles.headerBtn, { backgroundColor: theme.frameSoft, opacity: pressed ? 0.7 : 1 }]}
-        >
-          <Ionicons name={theme.icon} size={20} color={theme.frame} />
-        </Pressable>
+        <ThemeButton theme={theme} pill />
       </View>
 
       {/* About & sources: highlighted so people see the text is verified and where it comes from */}
